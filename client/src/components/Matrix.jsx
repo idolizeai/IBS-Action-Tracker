@@ -1,4 +1,7 @@
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import api from '../api/axios';
 import TaskCard from './TaskCard';
 
 const COLUMNS = [
@@ -56,14 +59,80 @@ const item = {
 };
 
 export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
+
+  const handleDragStart = (e, task) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', task.id.toString());
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragOverCol(null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragEnter = (colIndex) => {
+    setDragOverCol(colIndex);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverCol(null);
+  };
+
+  const handleDrop = useCallback(async (e, colIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverCol(null);
+
+    if (!draggedTask) return;
+
+    const destCol = COLUMNS[colIndex];
+    const newPriority = destCol.prios[0];
+
+    // Don't update if dropping in same priority
+    if (draggedTask.priority === newPriority) {
+      setDraggedTask(null);
+      return;
+    }
+
+    try {
+      const { data } = await api.patch(`/tasks/${draggedTask.id}`, { priority: newPriority });
+      onUpdated(data);
+      toast.success(`Priority updated to ${destCol.label}`);
+    } catch (e) {
+      toast.error('Failed to update priority');
+      console.error(e);
+    } finally {
+      setDraggedTask(null);
+    }
+  }, [draggedTask, onUpdated]);
+
   return (
     <>
       {/* Desktop: 4-column grid */}
       <div className="hidden md:grid md:grid-cols-4 gap-4" style={{ minHeight: 'calc(100vh - 160px)' }}>
-        {COLUMNS.map(col => {
+        {COLUMNS.map((col, colIndex) => {
           const colTasks = tasks.filter(t => col.prios.includes(t.priority));
+          const isOverColumn = dragOverCol === colIndex;
+
           return (
-            <div key={col.label} className={`rounded-2xl border ${col.bgClass} flex flex-col`}>
+            <div
+              key={col.label}
+              onDragOver={handleDragOver}
+              onDragEnter={() => handleDragEnter(colIndex)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, colIndex)}
+              className={`rounded-2xl border ${col.bgClass} flex flex-col transition-all duration-200 ${
+                isOverColumn && draggedTask ? 'bg-opacity-75 shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105' : ''
+              }`}
+            >
               {/* Header */}
               <div className="flex items-center gap-2 px-4 py-3.5 border-b border-black/5 flex-shrink-0">
                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${col.dotClass} shadow-sm`} />
@@ -84,7 +153,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
                 className="flex-1 overflow-y-auto p-3 space-y-2"
               >
                 <AnimatePresence>
-                  {colTasks.length === 0 ? (
+                  {colTasks.length === 0 && !dragOverCol ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-2">
                         <span className="text-sm">✓</span>
@@ -92,8 +161,16 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
                       <p className="text-xs text-slate-400 font-medium">Clear</p>
                     </div>
                   ) : (
-                    colTasks.map(t => (
-                      <motion.div key={t.id} variants={item}>
+                    colTasks.map((t) => (
+                      <div
+                        key={t.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, t)}
+                        onDragEnd={handleDragEnd}
+                        className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 ${
+                          draggedTask?.id === t.id ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+                        }`}
+                      >
                         {col.mixed && (
                           <div className="flex justify-end mb-1">
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${PRIO_MINI[t.priority].cls}`}>
@@ -101,8 +178,13 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
                             </span>
                           </div>
                         )}
-                        <TaskCard task={t} onUpdated={onUpdated} onDeleted={onDeleted} onEdit={onEdit} />
-                      </motion.div>
+                        <TaskCard 
+                          task={t} 
+                          onUpdated={onUpdated} 
+                          onDeleted={onDeleted} 
+                          onEdit={onEdit}
+                        />
+                      </div>
                     ))
                   )}
                 </AnimatePresence>
@@ -112,7 +194,6 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
         })}
       </div>
 
-      {/* Mobile: vertical stack */}
       <div className="md:hidden space-y-4 pb-24">
         {COLUMNS.map(col => {
           const colTasks = tasks.filter(t => col.prios.includes(t.priority));
@@ -133,7 +214,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
                 <div className="p-3 space-y-2">
                   <AnimatePresence>
                     {colTasks.map(t => (
-                      <div key={t.id}>
+                      <motion.div key={t.id} variants={item} initial="hidden" animate="show" exit={{ opacity: 0 }}>
                         {col.mixed && (
                           <div className="flex justify-end mb-1">
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${PRIO_MINI[t.priority].cls}`}>
@@ -142,7 +223,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
                           </div>
                         )}
                         <TaskCard task={t} onUpdated={onUpdated} onDeleted={onDeleted} onEdit={onEdit} />
-                      </div>
+                      </motion.div>
                     ))}
                   </AnimatePresence>
                 </div>
@@ -152,7 +233,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
             </div>
           );
         })}
-      </div>
+      </div> 
     </>
   );
 }

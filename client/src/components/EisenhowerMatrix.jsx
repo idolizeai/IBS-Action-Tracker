@@ -1,4 +1,7 @@
+import { useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import api from '../api/axios';
 import TaskCard from './TaskCard';
 
 // Priority → Eisenhower Quadrant mapping
@@ -83,13 +86,21 @@ const cardVariants = {
   show:   { opacity: 1, y: 0, transition: { duration: 0.18 } },
 };
 
-function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit }) {
+function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit, quadrantIndex, draggedTask, dragOverQuad, onDragStart, onDragEnd, onDragOver, onDragEnter, onDragLeave, onDrop }) {
   const showPrioBadge = q.prios.length > 1;
+  const isOverQuad = dragOverQuad === quadrantIndex;
 
   return (
-    <div className={`flex flex-col rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden`}
-         style={{ minHeight: 260 }}>
-
+    <div
+      onDragOver={onDragOver}
+      onDragEnter={() => onDragEnter(quadrantIndex)}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, quadrantIndex)}
+      className={`flex flex-col rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden transition-all duration-200 ${
+        isOverQuad && draggedTask ? 'shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105' : ''
+      }`}
+      style={{ minHeight: 260 }}
+    >
       {/* Header */}
       <div className={`bg-gradient-to-br ${q.headerGrad} px-4 py-3 flex-shrink-0`}>
         <div className="flex items-start justify-between gap-2">
@@ -116,14 +127,22 @@ function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit }) {
       {/* Tasks */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         <AnimatePresence>
-          {tasks.length === 0 ? (
+          {tasks.length === 0 && !dragOverQuad ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <span className="text-2xl mb-2 opacity-40">{q.emptyIcon}</span>
               <p className={`text-xs font-semibold ${q.emptyText}`}>All clear</p>
             </div>
           ) : (
-            tasks.map(task => (
-              <motion.div key={task.id} variants={cardVariants} initial="hidden" animate="show">
+            tasks.map((task) => (
+              <div
+                key={task.id}
+                draggable
+                onDragStart={(e) => onDragStart(e, task)}
+                onDragEnd={onDragEnd}
+                className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 ${
+                  draggedTask?.id === task.id ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+                }`}
+              >
                 {showPrioBadge && (
                   <div className="flex justify-end mb-1">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${PRIO_BADGE[task.priority].cls}`}>
@@ -132,7 +151,7 @@ function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit }) {
                   </div>
                 )}
                 <TaskCard task={task} onUpdated={onUpdated} onDeleted={onDeleted} onEdit={onEdit} />
-              </motion.div>
+              </div>
             ))
           )}
         </AnimatePresence>
@@ -142,7 +161,61 @@ function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit }) {
 }
 
 export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }) {
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverQuad, setDragOverQuad] = useState(null);
+
   const getTasksForQuadrant = (prios) => tasks.filter(t => prios.includes(t.priority));
+
+  const handleDragStart = (e, task) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', task.id.toString());
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragOverQuad(null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragEnter = (quadIndex) => {
+    setDragOverQuad(quadIndex);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverQuad(null);
+  };
+
+  const handleDrop = useCallback(async (e, quadrantIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverQuad(null);
+
+    if (!draggedTask) return;
+
+    const destQuadrant = QUADRANTS[quadrantIndex];
+    const newPriority = destQuadrant.prios[0];
+
+    if (draggedTask.priority === newPriority) {
+      setDraggedTask(null);
+      return;
+    }
+
+    try {
+      const { data } = await api.patch(`/tasks/${draggedTask.id}`, { priority: newPriority });
+      onUpdated(data);
+      toast.success(`Moved to ${destQuadrant.label}`);
+    } catch (e) {
+      toast.error('Failed to update priority');
+      console.error(e);
+    } finally {
+      setDraggedTask(null);
+    }
+  }, [draggedTask, onUpdated]);
 
   return (
     <>
@@ -189,14 +262,23 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
           </div>
 
           <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4">
-            {QUADRANTS.map(q => (
+            {QUADRANTS.map((q, idx) => (
               <QuadrantCell
                 key={q.id}
                 q={q}
+                quadrantIndex={idx}
                 tasks={getTasksForQuadrant(q.prios)}
                 onUpdated={onUpdated}
                 onDeleted={onDeleted}
                 onEdit={onEdit}
+                draggedTask={draggedTask}
+                dragOverQuad={dragOverQuad}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
               />
             ))}
           </div>
@@ -213,7 +295,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
         </div>
       </div>
 
-      {/* ── Mobile: stacked sections ── */}
+      {/* ── Mobile: stacked sections (no drag-drop) ── */}
       <div className="md:hidden space-y-4 pb-24">
         {/* Urgency/Importance header */}
         <div className="flex gap-2 text-[10px] font-black tracking-widest">
