@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, List, LogOut, Settings, X, RefreshCw, LayoutGrid, Grid2X2, Search } from 'lucide-react';
+import { Plus, List, LogOut, Settings, X, RefreshCw, LayoutGrid, Grid2X2 , User, DraftingCompass} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [customers, setCustomers]   = useState([]);
   const [loading, setLoading]       = useState(true);
   const [addOpen, setAddOpen]       = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [editTask, setEditTask]     = useState(null);
   const [masterOpen, setMasterOpen] = useState(false);
   const [viewMode, setViewMode]     = useState('kanban');
@@ -50,6 +52,7 @@ export default function Dashboard() {
       if (filters.function_type)        params.function_type    = filters.function_type;
       if (filters.financial_impact)     params.financial_impact = filters.financial_impact;
       const { data } = await api.get('/tasks', { params });
+      console.log('Fetched tasks with params', params, data);
       setTasks(data);
     } catch {
       toast.error('Failed to load tasks');
@@ -61,9 +64,9 @@ export default function Dashboard() {
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
   function handleTaskSaved(data, mode) {
-    if (mode === 'add')        setTasks(ts => [data, ...ts]);
-    else if (mode === 'edit')  setTasks(ts => ts.map(t => t.id === data.id ? data : t));
     setEditTask(null);
+    // Refetch to ensure data is in sync with server and respects filters
+    fetchTasks();
   }
 
   function handleTaskUpdated(data) {
@@ -91,6 +94,25 @@ export default function Dashboard() {
   const displayTasks = searchQuery.trim()
     ? tasks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
     : tasks;
+
+  useEffect(() => {
+  function handleKeyDown(e) {
+    // Ctrl + I OR Ctrl + Q
+    if (e.ctrlKey &&  e.shiftKey &&  e.key.toLowerCase() === 'a')  {
+      
+      e.preventDefault(); 
+      setEditTask(null);
+      setAddOpen(true);
+    
+    }
+  }
+
+  window.addEventListener('keydown', handleKeyDown);
+
+  return () => {
+    window.removeEventListener('keydown', handleKeyDown);
+  };
+}, []);
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -124,6 +146,22 @@ export default function Dashboard() {
           <div className="flex-1" />
 
           <span className="text-sm text-slate-500 font-medium hidden sm:block">{user?.name}</span>
+          {/* User name */}
+          {/* <span className="text-sm text-slate-500 font-medium hidden sm:block">{user?.name}</span> */}
+<button
+  onClick={() => navigate('/drafts')}
+  className="px-3 py-1.5 text-xs font-semibold rounded-full
+             bg-blue-600 text-white 
+             hover:bg-blue-700 
+             active:scale-95 
+             transition-all duration-150 
+             shadow-sm shadow-blue-600/20"
+  title="Draft"
+>
+  Draft
+</button>
+
+
 
           <button onClick={() => navigate('/list')} className="btn-ghost p-2" title="List View">
             <List size={17} />
@@ -146,12 +184,63 @@ export default function Dashboard() {
           <button onClick={() => { logout(); navigate('/login'); }} className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50" title="Sign Out">
             <LogOut size={16} />
           </button>
+         {/* User Menu */}
+<div className="relative">
+  <button
+    onClick={() => setUserMenuOpen(o => !o)}
+    className="flex items-center gap-2 btn-ghost px-2 py-1 rounded-full  border border-slate-200 px-2 py-0.5 "
+  >
+    <User size={18} />
+    <span className="hidden sm:block text-sm font-medium text-slate-600">
+      {user?.name}
+    </span>
+  </button>
+
+  <AnimatePresence>
+    {userMenuOpen && (
+      <motion.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.15 }}
+        className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50"
+      >
+        {/* User Info */}
+        <div className="px-4 py-3 border-b border-slate-100">
+          <div className="text-sm font-semibold text-slate-800">
+            {user?.name}
+          </div>
+          <div className="text-xs text-slate-500 truncate">
+            {user?.email}
+          </div>
+        </div>
+
+        {/* Logout */}
+        <button
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
+          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium"
+        >
+          <LogOut size={14} />
+          Logout
+        </button>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
         </div>
 
         {/* Filter bar */}
         <div className="px-4 pb-2">
           <FilterBar active={filters} onChange={setFilters} ibsLeads={ibsLeads} customers={customers} />
         </div>
+  
+
+
+
+
 
         {/* View toggle + Search */}
         <div className="px-4 pb-3 flex items-center gap-2">
@@ -232,6 +321,12 @@ export default function Dashboard() {
           )}
         </div>
       )}
+{/* <div>
+  sss
+</div> */}
+
+
+
 
       {/* ── Masters panel ── */}
       <AnimatePresence>
