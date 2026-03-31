@@ -3,14 +3,21 @@ const { success, created, error, notFound } = require('../utils/response');
 const { PRIORITIES, FINANCIAL_IMPACT, COMM_MODES, FUNCTION_TYPES } = require('../config/constants');
 
 const validateTaskBody = (body) => {
-  const { title, priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode } = body;
+  const { title, priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, is_draft } = body;
   if (!title || title.trim().length === 0) return 'title is required';
+ 
+  console.log('Validating task body:', is_draft , body); 
+  if (is_draft) {
+    return null; // skip validation for drafts
+  }
+ console.log('Validating non-draft task body:', body);
   if (!PRIORITIES.includes(Number(priority))) return 'invalid priority';
   if (!FUNCTION_TYPES.includes(function_type)) return 'invalid function_type';
   if (!ibs_lead_id) return 'ibs_lead_id is required';
   if (!customer_id) return 'customer_id is required';
   if (!FINANCIAL_IMPACT.includes(financial_impact)) return 'invalid financial_impact';
-  if (!COMM_MODES.includes(comm_mode)) return 'invalid comm_mode';
+  if (!COMM_MODES.includes(comm_mode)) return 'invalid comm_mode'; 
+
   return null;
 };
 

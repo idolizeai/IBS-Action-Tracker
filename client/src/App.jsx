@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ListView from './pages/ListView';
+import DraftsPage from './pages/Draft';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -25,6 +26,9 @@ function AppRoutes() {
       <Route
         path="/"
         element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+      />
+      <Route path='/drafts' 
+        element={<ProtectedRoute><DraftsPage /></ProtectedRoute>}
       />
       <Route
         path="/list"

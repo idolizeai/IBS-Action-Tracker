@@ -18,32 +18,39 @@ const Task = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+
+    is_draft: {
+      type:DataTypes.BOOLEAN,
+      allowNull:false,
+      defaultValue: false
+    },
     priority: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
+      defaultValue: null,
       validate: { min: 0, max: 4 },
     },
     function_type: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: { isIn: [FUNCTION_TYPES] },
     },
     ibs_lead_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
     customer_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
     financial_impact: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: { isIn: [FINANCIAL_IMPACT] },
     },
     comm_mode: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: { isIn: [COMM_MODES] },
     },
     done: {
