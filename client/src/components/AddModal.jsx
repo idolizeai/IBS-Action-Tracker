@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mic, MicOff, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -44,10 +44,14 @@ const EMPTY = {
 };
 
 export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, editTask }) {
-  const [form, setForm] = useState(EMPTY);
-  const [saving, setSaving] = useState(false);
+  const [form, setForm]         = useState(EMPTY);
+  const [saving, setSaving]     = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const debounceRef             = useRef(null);
 
+  // On open: load draft from server (new task only) or load editTask values
   useEffect(() => {
+    if (!open) return;
     if (editTask) {
       setForm({
         title:            editTask.title,
@@ -58,16 +62,58 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
         financial_impact: editTask.financial_impact,
         comm_mode:        editTask.comm_mode,
       });
+      setHasDraft(false);
     } else {
-      setForm(EMPTY);
+      api.get('/draft').then(({ data }) => {
+        if (data && data.title) {
+          setHasDraft(true);
+          setForm(EMPTY);
+        } else {
+          setHasDraft(false);
+          setForm(EMPTY);
+        }
+      }).catch(() => {
+        setHasDraft(false);
+        setForm(EMPTY);
+      });
     }
-  }, [editTask, open]);
+  }, [open, editTask]);
+
+  // Debounced auto-save to server (new tasks only, 800ms after last change)
+  useEffect(() => {
+    if (editTask || !open) return;
+    const hasAnyData = form.title || form.priority !== null || form.function_type ||
+                       form.ibs_lead_id || form.customer_id || form.financial_impact || form.comm_mode;
+    if (!hasAnyData) return;
+
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      api.put('/draft', form).catch(() => {}); // silent fail — draft is best-effort
+    }, 800);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [form, editTask, open]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  function resumeDraft() {
+
+    api.get('/draft').then(({ data }) => {
+      if (data) setForm(data);
+      setHasDraft(false);
+    }).catch(() => setHasDraft(false));
+  }
+
+  function dismissDraft() {
+    api.delete('/draft').catch(() => {});
+    setHasDraft(false);
+    setForm(EMPTY);
+  }
 
   const handleSpeechResult = useCallback(text => {
     setForm(f => ({ ...f, title: (f.title ? f.title + ' ' : '') + text }));
   }, []);
+  
   const { listening, toggle: toggleMic, supported: micSupported } = useSpeech(handleSpeechResult);
 
   const isComplete = form.priority !== null &&
@@ -98,6 +144,8 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
         onSaved(data, 'add');
         toast.success('Task added');
       }
+      clearTimeout(debounceRef.current);
+      api.delete('/draft').catch(() => {});
       onClose();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save');
@@ -157,6 +205,23 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                   <X size={18} />
                 </button>
               </div>
+
+              {/* Draft resume banner */}
+              {hasDraft && (
+                <div className="mx-5 mt-4 flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <span className="text-lg">📝</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-amber-800">You have an unsaved draft</p>
+                    <p className="text-xs text-amber-600">Resume where you left off?</p>
+                  </div>
+                  <button onClick={resumeDraft} className="text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg flex-shrink-0 transition-colors">
+                    Resume
+                  </button>
+                  <button onClick={dismissDraft} className="text-xs font-semibold text-amber-600 hover:text-amber-800 flex-shrink-0">
+                    Discard
+                  </button>
+                </div>
+              )}
 
               {/* Body */}
               <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, List, LogOut, Settings, X, RefreshCw, LayoutGrid, Grid2X2 } from 'lucide-react';
+import { Plus, List, LogOut, Settings, X, RefreshCw, LayoutGrid, Grid2X2, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -10,6 +10,14 @@ import EisenhowerMatrix from '../components/EisenhowerMatrix';
 import FilterBar from '../components/FilterBar';
 import AddModal from '../components/AddModal';
 import MasterManager from '../components/MasterManager';
+
+const PRIO_STATS = [
+  { p: 0, label: 'P0', bg: 'bg-red-100',    text: 'text-red-700',    dot: 'bg-red-500' },
+  { p: 1, label: 'P1', bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
+  { p: 2, label: 'P2', bg: 'bg-amber-100',  text: 'text-amber-700',  dot: 'bg-amber-400' },
+  { p: 3, label: 'P3', bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500' },
+  { p: 4, label: 'P4', bg: 'bg-slate-100',  text: 'text-slate-600',  dot: 'bg-slate-400' },
+];
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -22,7 +30,8 @@ export default function Dashboard() {
   const [addOpen, setAddOpen]       = useState(false);
   const [editTask, setEditTask]     = useState(null);
   const [masterOpen, setMasterOpen] = useState(false);
-  const [viewMode, setViewMode]     = useState('kanban'); // 'kanban' | 'eisenhower'
+  const [viewMode, setViewMode]     = useState('kanban');
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters]       = useState({ priority: null, ibs_lead: null, customer: null, function_type: null, financial_impact: null });
 
   useEffect(() => {
@@ -78,6 +87,11 @@ export default function Dashboard() {
 
   const p0Count = tasks.filter(t => t.priority === 0).length;
 
+  // Search filter — applied on top of whatever the API returned
+  const displayTasks = searchQuery.trim()
+    ? tasks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : tasks;
+
   return (
     <div className="min-h-screen bg-surface flex flex-col">
 
@@ -109,20 +123,16 @@ export default function Dashboard() {
 
           <div className="flex-1" />
 
-          {/* User name */}
           <span className="text-sm text-slate-500 font-medium hidden sm:block">{user?.name}</span>
 
-          {/* List view */}
           <button onClick={() => navigate('/list')} className="btn-ghost p-2" title="List View">
             <List size={17} />
           </button>
 
-          {/* Refresh */}
           <button onClick={fetchTasks} className="btn-ghost p-2" title="Refresh">
             <RefreshCw size={15} className={loading ? 'animate-spin text-blue-600' : ''} />
           </button>
 
-          {/* Masters (admin only) */}
           {user?.role === 'admin' && (
             <button
               onClick={() => setMasterOpen(o => !o)}
@@ -133,7 +143,6 @@ export default function Dashboard() {
             </button>
           )}
 
-          {/* Logout */}
           <button onClick={() => { logout(); navigate('/login'); }} className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50" title="Sign Out">
             <LogOut size={16} />
           </button>
@@ -144,7 +153,7 @@ export default function Dashboard() {
           <FilterBar active={filters} onChange={setFilters} ibsLeads={ibsLeads} customers={customers} />
         </div>
 
-        {/* ── View toggle — below filter chips, easy to tap ── */}
+        {/* View toggle + Search */}
         <div className="px-4 pb-3 flex items-center gap-2">
           <button
             onClick={() => setViewMode('kanban')}
@@ -167,16 +176,62 @@ export default function Dashboard() {
             }`}
           >
             <Grid2X2 size={13} />
-            Eisenhower Matrix
+            Eisenhower
           </button>
 
-          {viewMode === 'eisenhower' && (
-            <span className="hidden sm:block text-[10px] text-slate-400 font-medium ml-1">
-              P0 Do Now · P1 Today · P2 Schedule · P3 Delegate
-            </span>
-          )}
+          {/* Search input */}
+          <div className="relative ml-auto flex items-center">
+            <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search tasks…"
+              className={`pl-7 pr-7 py-1.5 text-xs rounded-full border outline-none transition-all duration-150 w-36 focus:w-52 bg-white
+                ${searchQuery
+                  ? 'border-blue-400 text-slate-800 ring-1 ring-blue-200'
+                  : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                }`}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 text-slate-400 hover:text-slate-600"
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
         </div>
       </header>
+
+      {/* ── Stats strip ── */}
+      {!loading && tasks.length > 0 && (
+        <div className="bg-white border-b border-slate-100 px-4 py-2 flex items-center gap-3 flex-wrap">
+          <span className="text-xs font-semibold text-slate-500">
+            {tasks.length} open
+          </span>
+          <div className="w-px h-3 bg-slate-200" />
+          {PRIO_STATS.map(({ p, label, bg, text, dot }) => {
+            const count = tasks.filter(t => t.priority === p).length;
+            if (count === 0) return null;
+            return (
+              <span key={p} className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full ${bg} ${text}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                {label}: {count}
+              </span>
+            );
+          })}
+          {searchQuery.trim() && (
+            <>
+              <div className="w-px h-3 bg-slate-200" />
+              <span className="text-xs text-blue-600 font-semibold">
+                {displayTasks.length} matching "{searchQuery}"
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── Masters panel ── */}
       <AnimatePresence>
@@ -224,6 +279,12 @@ export default function Dashboard() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
             </svg>
           </div>
+        ) : searchQuery.trim() && displayTasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <Search size={32} className="text-slate-300 mb-3" />
+            <p className="text-slate-500 font-semibold">No tasks match "{searchQuery}"</p>
+            <button onClick={() => setSearchQuery('')} className="mt-2 text-xs text-blue-600 hover:underline">Clear search</button>
+          </div>
         ) : (
           <AnimatePresence mode="wait">
             <motion.div
@@ -236,14 +297,14 @@ export default function Dashboard() {
             >
               {viewMode === 'kanban' ? (
                 <Matrix
-                  tasks={tasks}
+                  tasks={displayTasks}
                   onUpdated={handleTaskUpdated}
                   onDeleted={handleTaskDeleted}
                   onEdit={handleEdit}
                 />
               ) : (
                 <EisenhowerMatrix
-                  tasks={tasks}
+                  tasks={displayTasks}
                   onUpdated={handleTaskUpdated}
                   onDeleted={handleTaskDeleted}
                   onEdit={handleEdit}
@@ -259,11 +320,7 @@ export default function Dashboard() {
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.94 }}
         onClick={() => { setEditTask(null); setAddOpen(true); }}
-        className="fixed bottom-6 right-6 z-20
-                   w-14 h-14 rounded-full
-                   bg-blue-600 hover:bg-blue-700
-                   shadow-xl shadow-blue-600/30
-                   flex items-center justify-center text-white"
+        className="fixed bottom-6 right-6 z-20 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/30 flex items-center justify-center text-white"
         title="Add task"
       >
         <Plus size={24} strokeWidth={2.5} />

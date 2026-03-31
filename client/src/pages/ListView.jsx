@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, CheckSquare, Square, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Square, SlidersHorizontal, Clock, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
@@ -14,16 +14,57 @@ const PRIO_CLS   = {
   3: 'bg-blue-100   text-blue-700   border-blue-300',
   4: 'bg-slate-100  text-slate-600  border-slate-300',
 };
-const PRIO_HEADER = {
-  0: 'text-red-700',
-  1: 'text-orange-700',
-  2: 'text-amber-700',
-  3: 'text-blue-700',
-  4: 'text-slate-600',
-};
 
 const FINANCIAL_LABELS = { very_high: 'Very High $$$', high: 'High $$', moderate: 'Moderate', low: 'Low', none: 'No Impact' };
 const COMM_LABELS = { email: 'Email', in_person: 'In-Person', remote_meeting: 'Remote', chat: 'Chat', phone: 'Phone', none: 'None' };
+
+const PRIO_DOT = {
+  0: 'bg-red-500',
+  1: 'bg-orange-500',
+  2: 'bg-amber-400',
+  3: 'bg-blue-500',
+  4: 'bg-slate-400',
+};
+
+function relativeTime(dateStr) {
+  if (!dateStr) return '';
+  const now = new Date();
+  const d = new Date(dateStr);
+  const diffMs = now - d;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr  = Math.floor(diffMs / 3600000);
+  if (diffMin < 1)  return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr  < 24) return `${diffHr}h ago`;
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7)  return `${diffDays} days ago`;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function groupByPeriod(tasks) {
+  const now = new Date();
+  const startOfToday     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday - 86400000);
+  const startOfWeek      = new Date(startOfToday - 6 * 86400000);
+
+  const groups = [
+    { key: 'today',     label: 'Today',      tasks: [] },
+    { key: 'yesterday', label: 'Yesterday',  tasks: [] },
+    { key: 'week',      label: 'This Week',  tasks: [] },
+    { key: 'earlier',   label: 'Earlier',    tasks: [] },
+  ];
+
+  for (const t of tasks) {
+    const d = t.done_at ? new Date(t.done_at) : new Date(0);
+    if (d >= startOfToday)     groups[0].tasks.push(t);
+    else if (d >= startOfYesterday) groups[1].tasks.push(t);
+    else if (d >= startOfWeek) groups[2].tasks.push(t);
+    else                       groups[3].tasks.push(t);
+  }
+
+  return groups.filter(g => g.tasks.length > 0);
+}
 
 export default function ListView() {
   const navigate = useNavigate();
@@ -35,6 +76,7 @@ export default function ListView() {
   const [customers, setCustomers] = useState([]);
 
   const fetchTasks = useCallback(async () => {
+    setLoading(true);
     try {
       const { data } = await api.get('/tasks', { params: { done: showDone } });
       setTasks(data);
@@ -84,7 +126,7 @@ export default function ListView() {
     return acc;
   }, {});
 
-  const totalCount = tasks.length;
+  const doneGroups = showDone ? groupByPeriod(tasks) : [];
 
   return (
     <div className="min-h-screen bg-surface">
@@ -95,8 +137,10 @@ export default function ListView() {
             <ArrowLeft size={18} />
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-slate-900">List View</h1>
-            <p className="text-xs text-slate-400">{totalCount} {showDone ? 'completed' : 'active'} tasks</p>
+            <h1 className="text-lg font-bold text-slate-900">
+              {showDone ? 'Done Log' : 'List View'}
+            </h1>
+            <p className="text-xs text-slate-400">{tasks.length} {showDone ? 'completed' : 'active'} tasks</p>
           </div>
           <button
             onClick={() => setShowDone(d => !d)}
@@ -106,8 +150,8 @@ export default function ListView() {
                 : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
             }`}
           >
-            {showDone ? <CheckSquare size={14} /> : <Square size={14} />}
-            Done
+            {showDone ? <CheckCheck size={14} /> : <Square size={14} />}
+            {showDone ? 'Active' : 'Done'}
           </button>
         </div>
       </header>
@@ -129,13 +173,84 @@ export default function ListView() {
               {showDone ? 'No completed tasks yet.' : 'No active tasks. Tap + to add one.'}
             </p>
           </div>
+
+        ) : showDone ? (
+          /* ── Done Log View ── */
+          <div className="space-y-8">
+            {doneGroups.map(group => (
+              <div key={group.key}>
+                {/* Period header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={13} className="text-green-600" />
+                    <span className="text-sm font-bold text-slate-700">{group.label}</span>
+                  </div>
+                  <span className="text-xs text-slate-400 font-medium">{group.tasks.length} done</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+
+                <div className="space-y-2">
+                  <AnimatePresence>
+                    {group.tasks.map(task => (
+                      <motion.div
+                        key={task.id}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 6 }}
+                        className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Done toggle */}
+                          <button
+                            onClick={() => toggleDone(task)}
+                            className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center transition-all shadow-sm hover:bg-green-600"
+                          >
+                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
+                              <polyline points="2,6 5,9 10,3" />
+                            </svg>
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold leading-snug line-through text-slate-400">
+                              {task.title}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                              {/* Priority dot + label */}
+                              <span className="flex items-center gap-1 text-xs text-slate-400">
+                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIO_DOT[task.priority]}`} />
+                                {PRIO_LABEL[task.priority]?.split(' · ')[0]}
+                              </span>
+                              <span className="text-slate-300">·</span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-medium">
+                                {task.function_type}
+                              </span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-100 font-medium">
+                                {task.customer_name}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Relative time */}
+                          <span className="flex-shrink-0 text-xs text-slate-400 font-medium whitespace-nowrap mt-0.5">
+                            {relativeTime(task.done_at)}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ))}
+          </div>
+
         ) : (
+          /* ── Active Tasks — Priority Groups ── */
           <div className="space-y-8">
             {[0, 1, 2, 3, 4].map(p => {
               if (!byPriority[p].length) return null;
               return (
                 <div key={p}>
-                  {/* Priority group header */}
                   <div className="flex items-center gap-3 mb-3">
                     <span className={`text-sm font-bold px-3 py-1 rounded-full border ${PRIO_CLS[p]}`}>
                       {PRIO_LABEL[p]}
@@ -152,29 +267,19 @@ export default function ListView() {
                           initial={{ opacity: 0, x: -6 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 6 }}
-                          className={`bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow ${task.done ? 'opacity-55' : ''}`}
+                          className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-start gap-3">
-                            {/* Done toggle */}
                             <button
                               onClick={() => toggleDone(task)}
-                              className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shadow-sm
-                                ${task.done ? 'bg-green-500 border-green-500' : 'border-slate-300 hover:border-green-400 bg-white'}`}
-                            >
-                              {task.done && (
-                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
-                                  <polyline points="2,6 5,9 10,3" />
-                                </svg>
-                              )}
-                            </button>
+                              className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 border-slate-300 hover:border-green-400 bg-white flex items-center justify-center transition-all shadow-sm"
+                            />
 
-                            {/* Content */}
                             <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-semibold leading-snug ${task.done ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                              <p className="text-sm font-semibold leading-snug text-slate-800">
                                 {task.title}
                               </p>
 
-                              {/* Meta chips */}
                               <div className="flex flex-wrap gap-1.5 mt-2">
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium">
                                   {task.function_type}
@@ -196,7 +301,6 @@ export default function ListView() {
                               </div>
                             </div>
 
-                            {/* Edit */}
                             <button
                               onClick={() => setEditTask(task)}
                               className="flex-shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1 rounded-lg hover:bg-blue-50"
