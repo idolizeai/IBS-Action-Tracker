@@ -14,7 +14,7 @@ const QUADRANTS = [
   {
     id: 'q1',
     num: 'P0',
-    label: 'Do Now',
+    label: 'DO NOW',
     sublabel: 'Urgent · Important',
     action: 'ACT NOW',
     prios: [0],
@@ -29,9 +29,9 @@ const QUADRANTS = [
   {
     id: 'q2',
     num: 'P1',
-    label: 'Do Today',
+    label: 'DO TODAY/TOMORROW',
     sublabel: 'Important · Less Urgent',
-    action: 'TODAY',
+    action: 'TODAY/TOM',
     prios: [1],
     headerGrad: 'from-orange-500 to-orange-600',
     bg: 'bg-orange-50',
@@ -44,7 +44,7 @@ const QUADRANTS = [
   {
     id: 'q3',
     num: 'P2',
-    label: 'Schedule',
+    label: 'Do This Week',
     sublabel: 'Important · Not Urgent',
     action: 'PLAN IT',
     prios: [2],
@@ -59,7 +59,7 @@ const QUADRANTS = [
   {
     id: 'q4',
     num: 'P3',
-    label: 'Delegate',
+    label: 'WEEKEND',
     sublabel: 'Urgent · Not Important',
     action: 'HAND OFF',
     prios: [3],
@@ -237,7 +237,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-300" />
               <span className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase text-slate-500 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-slate-400" />
-                Less Urgent
+                 Urgent
               </span>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-300" />
             </div>
@@ -256,7 +256,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
             <div className="flex-1 flex items-center justify-center" style={{ minHeight: 260 }}>
               <div className="flex items-center gap-1.5 -rotate-90 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
-                <span className="text-xs font-black tracking-widest uppercase text-slate-500">Lower Priority</span>
+                <span className="text-xs font-black tracking-widest uppercase text-slate-500">Medium Priority</span>
               </div>
             </div>
           </div>

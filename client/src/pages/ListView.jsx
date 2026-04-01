@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, CheckSquare, Square, SlidersHorizontal, Clock, CheckCheck } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+import Navbar from '../components/Navbar';
 import AddModal from '../components/AddModal';
 
 const PRIO_LABEL = { 0: 'P0 · Do Now', 1: 'P1 · Today', 2: 'P2 · This Week', 3: 'P3 · Weekend', 4: 'P4 · TBD' };
@@ -67,7 +67,6 @@ function groupByPeriod(tasks) {
 }
 
 export default function ListView() {
-  const navigate = useNavigate();
   const [tasks, setTasks]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showDone, setShowDone]   = useState(false);
@@ -121,6 +120,37 @@ export default function ListView() {
     setEditTask(null);
   }
 
+  const [draggedTask, setDraggedTask]   = useState(null);
+  const [dragOverPrio, setDragOverPrio] = useState(null);
+
+  function handleDragStart(e, task) {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleDragEnd() {
+    setDraggedTask(null);
+    setDragOverPrio(null);
+  }
+
+  async function handleDrop(e, newPriority) {
+    e.preventDefault();
+    setDragOverPrio(null);
+    if (!draggedTask || draggedTask.priority === newPriority) {
+      setDraggedTask(null);
+      return;
+    }
+    try {
+      const { data } = await api.patch(`/tasks/${draggedTask.id}`, { priority: newPriority });
+      setTasks(ts => ts.map(t => t.id === data.id ? data : t));
+      toast.success(`Moved to ${PRIO_LABEL[newPriority]}`);
+    } catch {
+      toast.error('Failed to update priority');
+    } finally {
+      setDraggedTask(null);
+    }
+  }
+
   const byPriority = [0, 1, 2, 3, 4].reduce((acc, p) => {
     acc[p] = tasks.filter(t => t.priority === p);
     return acc;
@@ -130,31 +160,31 @@ export default function ListView() {
 
   return (
     <div className="min-h-screen bg-surface">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="btn-ghost p-2">
-            <ArrowLeft size={18} />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-slate-900">
-              {showDone ? 'Done Log' : 'List View'}
-            </h1>
-            <p className="text-xs text-slate-400">{tasks.length} {showDone ? 'completed' : 'active'} tasks</p>
-          </div>
-          <button
-            onClick={() => setShowDone(d => !d)}
-            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border font-semibold transition-all ${
-              showDone
-                ? 'bg-green-50 border-green-300 text-green-700'
-                : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
-            }`}
-          >
-            {showDone ? <CheckCheck size={14} /> : <Square size={14} />}
-            {showDone ? 'Active' : 'Done'}
-          </button>
+      {/* Shared Navbar */}
+      <Navbar />
+
+      {/* Page sub-header */}
+      <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
+        <div className="flex-1">
+          <h1 className="text-base font-bold text-slate-900">
+            {showDone ? 'Done Log' : 'Active Tasks'}
+          </h1>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {tasks.length} {showDone ? 'completed' : 'active'} tasks
+          </p>
         </div>
-      </header>
+        <button
+          onClick={() => setShowDone(d => !d)}
+          className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border font-semibold transition-all ${
+            showDone
+              ? 'bg-green-50 border-green-300 text-green-700'
+              : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+          }`}
+        >
+          {showDone ? <CheckCheck size={14} /> : <Square size={14} />}
+          {showDone ? 'Active' : 'Done'}
+        </button>
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
         {loading ? (
@@ -211,7 +241,7 @@ export default function ListView() {
                           </button>
 
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold leading-snug line-through text-slate-400">
+                            <p className="text-sm font-semibold leading-snug line-through text-slate-400 break-words min-w-0">
                               {task.title}
                             </p>
 
@@ -246,16 +276,28 @@ export default function ListView() {
 
         ) : (
           /* ── Active Tasks — Priority Groups ── */
-          <div className="space-y-8">
+          <div className="space-y-6">
             {[0, 1, 2, 3, 4].map(p => {
-              if (!byPriority[p].length) return null;
+              const isOver = dragOverPrio === p;
               return (
-                <div key={p}>
-                  <div className="flex items-center gap-3 mb-3">
+                <div
+                  key={p}
+                  onDragOver={e => { e.preventDefault(); setDragOverPrio(p); }}
+                  onDragLeave={() => setDragOverPrio(null)}
+                  onDrop={e => handleDrop(e, p)}
+                  className={`rounded-2xl transition-all duration-150 ${isOver && draggedTask ? 'ring-2 ring-blue-400 ring-offset-2 bg-blue-50/50' : ''}`}
+                >
+                  {/* Priority group header */}
+                  <div className="flex items-center gap-3 mb-3 px-1">
                     <span className={`text-sm font-bold px-3 py-1 rounded-full border ${PRIO_CLS[p]}`}>
                       {PRIO_LABEL[p]}
                     </span>
-                    <span className="text-xs text-slate-400 font-medium">{byPriority[p].length} item{byPriority[p].length !== 1 ? 's' : ''}</span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      {byPriority[p].length} item{byPriority[p].length !== 1 ? 's' : ''}
+                    </span>
+                    {isOver && draggedTask && draggedTask.priority !== p && (
+                      <span className="text-xs text-blue-600 font-semibold">Drop to move here</span>
+                    )}
                     <div className="flex-1 h-px bg-slate-200" />
                   </div>
 
@@ -267,7 +309,12 @@ export default function ListView() {
                           initial={{ opacity: 0, x: -6 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 6 }}
-                          className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                          draggable
+                          onDragStart={e => handleDragStart(e, task)}
+                          onDragEnd={handleDragEnd}
+                          className={`bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${
+                            draggedTask?.id === task.id ? 'opacity-40 scale-95' : ''
+                          }`}
                         >
                           <div className="flex items-start gap-3">
                             <button
@@ -276,7 +323,7 @@ export default function ListView() {
                             />
 
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold leading-snug text-slate-800">
+                              <p className="text-sm font-semibold leading-snug text-slate-800 break-words min-w-0">
                                 {task.title}
                               </p>
 
@@ -311,6 +358,19 @@ export default function ListView() {
                         </motion.div>
                       ))}
                     </AnimatePresence>
+
+                    {/* Empty group placeholder — always visible so drag targets exist */}
+                    {byPriority[p].length === 0 && (
+                      <div className={`h-14 rounded-xl border-2 border-dashed flex items-center justify-center transition-all duration-150 ${
+                        isOver && draggedTask
+                          ? 'border-blue-400 bg-blue-50'
+                          : 'border-slate-200 bg-slate-50/50'
+                      }`}>
+                        <span className={`text-xs font-medium ${isOver && draggedTask ? 'text-blue-500' : 'text-slate-300'}`}>
+                          {isOver && draggedTask ? 'Drop here' : 'Empty'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

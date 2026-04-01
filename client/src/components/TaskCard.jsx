@@ -70,9 +70,10 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.2 }}
+      onClick={() => setExpanded(e => !e)}
       className={`
         bg-white border border-slate-200 rounded-xl border-l-4 ${PRIO_BORDER[task.priority]}
-        shadow-sm hover:shadow-md transition-shadow duration-200
+        shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer
         ${task.done ? 'opacity-50' : ''}
       `}
     >
@@ -81,7 +82,7 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
         <div className="flex items-start gap-2.5">
           {/* Checkbox */}
           <button
-            onClick={toggleDone}
+            onClick={e => { e.stopPropagation(); toggleDone(); }}
             disabled={toggling}
             className={`
               flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center
@@ -89,18 +90,20 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
               ${
                 task.done
                   ? 'bg-green-500 border-green-500'
-                  : 'border-slate-300 hover:border-green-400 bg-white'
+                  : 'border-slate-300 hover:border-green-400 hover:bg-green-50 bg-white'
               }
             `}
           >
-            {task.done && (
-              <Check size={10} strokeWidth={3} className="text-white" />
-            )}
+            <Check
+              size={10}
+              strokeWidth={3}
+              className={task.done ? 'text-white' : 'text-slate-300 group-hover:text-green-400'}
+            />
           </button>
 
           {/* Title */}
           <p
-            className={`flex-1 text-sm leading-snug ${
+            className={`flex-1 text-sm leading-snug break-words min-w-0 ${
               task.done
                 ? 'line-through text-slate-400'
                 : 'text-slate-800 font-medium'
@@ -111,7 +114,7 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
 
           {/* Expand toggle */}
           <button
-            onClick={() => setExpanded((e) => !e)}
+            onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
             className="flex-shrink-0 text-slate-400 hover:text-slate-600 transition-colors p-0.5"
           >
             <motion.div
@@ -165,14 +168,14 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
 
             <div className="flex items-center gap-1 ml-7">
               <button
-                onClick={() => onEdit(task)}
+                onClick={e => { e.stopPropagation(); onEdit(task); }}
                 className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 transition-colors py-1 px-2 rounded-lg hover:bg-blue-50 font-medium"
               >
                 <Pencil size={11} /> Edit
               </button>
 
               <button
-                onClick={handleDelete}
+                onClick={e => { e.stopPropagation(); handleDelete(); }}
                 disabled={deleting}
                 className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-600 transition-colors py-1 px-2 rounded-lg hover:bg-red-50 font-medium"
               >

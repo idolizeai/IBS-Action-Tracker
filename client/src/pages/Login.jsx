@@ -24,7 +24,7 @@ export default function Login() {
       } else {
         await register(form.name, form.email, form.password, form.role);
       }
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Something went wrong');
     } finally {
