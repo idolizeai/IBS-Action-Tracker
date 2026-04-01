@@ -199,11 +199,15 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                        md:inset-0 md:flex md:items-center md:justify-center md:p-4"
           >
             <div className="
-              bg-white w-full shadow-2xl
-               rounded-t-2xl md:rounded-2xl
-              md:max-w-lg md:max-h-[88vh]
-              flex flex-col border border-slate-200 h-full max-h-[92vh]
-            ">
+  bg-white w-full shadow-2xl
+  rounded-t-2xl md:rounded-2xl
+  md:max-w-lg
+  flex flex-col border border-slate-200
+  h-[85dvh] md:h-auto md:max-h-[88vh]
+"
+>
+
+  
               {/* Header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 flex-shrink-0">
                 <div>
@@ -237,7 +241,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
               )}
 
               {/* Body */}
-              <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+<div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 sm:py-5 space-y-4 sm:space-y-6">
                 {/* Title + mic */}
                 <div>
                   <label className="block text-xs text-slate-500 mb-2 font-semibold uppercase tracking-wider">
@@ -284,8 +288,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-4 border-t border-slate-100 flex-shrink-0 bg-slate-50 rounded-b-2xl sticky bottom-0">
-                {/* Progress bar */}
+<div className="px-4 sm:px-5 py-3 sm:py-4 border-t border-slate-100 flex-shrink-0 bg-slate-50 rounded-b-2xl sticky bottom-0">                {/* Progress bar */}
                 <div className="flex gap-1 mb-3">
                   {filled.map((done, i) => (
                     <div

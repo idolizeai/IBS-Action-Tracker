@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, List, LogOut, Settings, X, RefreshCw, LayoutGrid, Grid2X2, User, Bell } from 'lucide-react';
+import { Plus, List, LogOut, Settings, X, RefreshCw, LayoutGrid, Grid2X2, User, Bell, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -129,7 +129,7 @@ export default function Dashboard() {
             </div>
             <div className="hidden sm:flex items-center gap-1.5">
               <img src={idolizeLogo} alt="Idolize" className="h-5 w-auto opacity-50" />
-              <span className="font-bold text-slate-900 text-sm">IBS Actions</span>
+              <span className="font-bold text-slate-900 text-sm  hidden sm:block">IBS Actions</span>
             </div>
           </div>
 
@@ -147,20 +147,20 @@ export default function Dashboard() {
           <div className="flex-1" />
 
           {/* Draft button */}
-          <button
-            onClick={() => navigate('/drafts')}
-            className="px-5 py-2 text-sm font-semibold rounded-full bg-red-500 text-white hover:bg-red-600 active:scale-95 transition-all duration-150 shadow-sm shadow-red-500/20"
-            title="Draft"
-          >
-            Draft
-          </button>
+        <button onClick={() => navigate('/drafts')}
+  className="flex items-center gap-1.5 px-3 sm:px-5 py-2 text-sm font-semibold rounded-full bg-red-500 text-white hover:bg-red-600 active:scale-95 transition-all shadow-sm shadow-red-500/20"
+  title="Drafts">
+  <FileText size={15} />
+  <span className="hidden sm:inline">Draft</span>
+</button>
 
           {/* List view */}
-          <button onClick={() => navigate('/list')} className="flex items-center gap-1.5 btn-ghost px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900" title="List View">
-            <List size={15} />
-            <span>List View</span>
-          </button>
-
+         <button onClick={() => navigate('/list')}
+  className="btn-ghost p-2 sm:flex sm:items-center sm:gap-1.5 sm:px-3 sm:py-2 sm:rounded-lg text-slate-600 hover:text-slate-900"
+  title="List View">
+  <List size={15} />
+  <span className="hidden sm:inline text-sm font-semibold">List</span>
+</button>
           {/* Refresh */}
           <button onClick={fetchTasks} className="btn-ghost p-2" title="Refresh">
             <RefreshCw size={15} className={loading ? 'animate-spin text-blue-600' : ''} />
@@ -311,13 +311,13 @@ export default function Dashboard() {
         </div>
 
         {/* Filter bar */}
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-2 overflow-x-auto scrollbar-none">
           <FilterBar active={filters} onChange={setFilters} ibsLeads={ibsLeads} customers={customers} />
         </div>
 
         {/* View toggle */}
         <div className="px-4 pb-3 flex items-center gap-3">
-          <div className="inline-flex items-center bg-slate-100 rounded-xl p-1 gap-0.5">
+          <div className="inline-flex items-center bg-slate-100 rounded-xl p-1 gap-0.5 ">
             <button
               onClick={() => setViewMode('kanban')}
               className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${

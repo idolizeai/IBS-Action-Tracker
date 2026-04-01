@@ -6,6 +6,49 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 import AddModal from '../components/AddModal';
 
+const PRIORITY_LABELS = {
+  0: 'P0 · Do Now',
+  1: 'P1 · Do Today',
+  2: 'P2 · This Week',
+  3: 'P3 · Weekend',
+  4: 'P4 · TBD',
+};
+
+const PRIORITY_COLORS = {
+  0: 'bg-red-100 text-red-700 border-red-200',
+  1: 'bg-orange-100 text-orange-700 border-orange-200',
+  2: 'bg-amber-100 text-amber-700 border-amber-200',
+  3: 'bg-blue-100 text-blue-700 border-blue-200',
+  4: 'bg-slate-100 text-slate-600 border-slate-200',
+};
+
+const FINANCIAL_LABELS = {
+  very_high: 'Very High $$$',
+  high: 'High $$',
+  moderate: 'Moderate',
+  low: 'Low',
+  none: 'No Impact',
+};
+
+const FINANCIAL_COLORS = {
+  very_high: 'bg-red-100 text-red-700 border-red-200',
+  high: 'bg-orange-100 text-orange-700 border-orange-200',
+  moderate: 'bg-amber-100 text-amber-700 border-amber-200',
+  low: 'bg-green-100 text-green-700 border-green-200',
+  none: 'bg-slate-100 text-slate-600 border-slate-200',
+};
+
+const COMM_LABELS = {
+  email: 'Email',
+  in_person: 'In-Person',
+  remote_meeting: 'Remote',
+  chat: 'Chat',
+  phone: 'Phone',
+  none: 'None',
+};
+
+const COMM_COLORS = 'bg-teal-100 text-teal-700 border-teal-200';
+
 export default function DraftsPage() {
   const navigate = useNavigate();
 
@@ -104,7 +147,41 @@ export default function DraftsPage() {
                         {task.title}
                       </p>
 
-                      {/* Missing fields */}
+                      {/* Badges - Fields that are filled */}
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {task.priority !== null && (
+                          <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${PRIORITY_COLORS[task.priority]}`}>
+                            {PRIORITY_LABELS[task.priority]}
+                          </span>
+                        )}
+                        {task.function_type && (
+                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium whitespace-nowrap">
+                            {task.function_type}
+                          </span>
+                        )}
+                        {task.ibs_lead_name && (
+                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium truncate max-w-[100px] sm:max-w-none">
+                            {task.ibs_lead_name}
+                          </span>
+                        )}
+                        {task.customer_name && (
+                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium truncate max-w-[100px] sm:max-w-none">
+                            {task.customer_name}
+                          </span>
+                        )}
+                        {task.financial_impact && (
+                          <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${FINANCIAL_COLORS[task.financial_impact]}`}>
+                            {FINANCIAL_LABELS[task.financial_impact]}
+                          </span>
+                        )}
+                        {task.comm_mode && (
+                          <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${COMM_COLORS}`}>
+                            {COMM_LABELS[task.comm_mode]}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Missing fields - shown in red */}
                       {task.missing?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {task.missing.map((m, i) => (
