@@ -26,7 +26,8 @@ export default function Login() {
       }
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Something went wrong');
+      console.log("err ", err);
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -50,8 +51,8 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/25 mb-4">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-slate-900">IBS Action Manager</h1>
@@ -64,11 +65,10 @@ export default function Login() {
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 capitalize ${
-                mode === m
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 capitalize ${mode === m
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
-              }`}
+                }`}
             >
               {m === 'login' ? 'Sign In' : 'Register'}
             </button>
@@ -163,8 +163,8 @@ export default function Login() {
           >
             {loading ? (
               <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
             ) : mode === 'login' ? <LogIn size={16} /> : <UserPlus size={16} />}
             {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}

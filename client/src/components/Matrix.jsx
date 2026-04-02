@@ -55,7 +55,7 @@ const container = {
 };
 const item = {
   hidden: { opacity: 0, y: 8 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.2 } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.2 } },
 };
 
 export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
@@ -107,7 +107,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
       onUpdated(data);
       toast.success(`Priority updated to ${destCol.label}`);
     } catch (e) {
-      toast.error('Failed to update priority');
+      toast.error(e.response.data.error || 'Failed to update priority');
       console.error(e);
     } finally {
       setDraggedTask(null);
@@ -129,9 +129,8 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
               onDragEnter={() => handleDragEnter(colIndex)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, colIndex)}
-              className={`rounded-2xl border ${col.bgClass} flex flex-col transition-all duration-200 ${
-                isOverColumn && draggedTask ? 'bg-opacity-75 shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105' : ''
-              }`}
+              className={`rounded-2xl border ${col.bgClass} flex flex-col transition-all duration-200 ${isOverColumn && draggedTask ? 'bg-opacity-75 shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105' : ''
+                }`}
             >
               {/* Header */}
               <div className="flex items-center gap-2 px-4 py-3.5 border-b border-black/5 flex-shrink-0">
@@ -167,9 +166,8 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
                         draggable
                         onDragStart={(e) => handleDragStart(e, t)}
                         onDragEnd={handleDragEnd}
-                        className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 ${
-                          draggedTask?.id === t.id ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
-                        }`}
+                        className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 ${draggedTask?.id === t.id ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+                          }`}
                       >
                         {col.mixed && (
                           <div className="flex justify-end mb-1">
@@ -178,10 +176,10 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
                             </span>
                           </div>
                         )}
-                        <TaskCard 
-                          task={t} 
-                          onUpdated={onUpdated} 
-                          onDeleted={onDeleted} 
+                        <TaskCard
+                          task={t}
+                          onUpdated={onUpdated}
+                          onDeleted={onDeleted}
                           onEdit={onEdit}
                         />
                       </div>
@@ -233,7 +231,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
             </div>
           );
         })}
-      </div> 
+      </div>
     </>
   );
 }

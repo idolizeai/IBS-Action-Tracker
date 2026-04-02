@@ -4,12 +4,12 @@ const { User } = require('../models');
 
 const generateToken = (user) =>
   jwt.sign(
-    { id: user.id, email: user.email, name: user.name, role: user.role },
+    { id: user.id, email: user.email, name: user.name, role: user.role, ibs_lead_id: user.ibs_lead_id },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
 
-const register = async (name, email, password, role) => {
+const register = async (name, email, password, role, ibs_lead_id) => {
   const existing = await User.findOne({ where: { email: email.toLowerCase() } });
   if (existing) {
     const err = new Error('Email already registered');
@@ -24,6 +24,7 @@ const register = async (name, email, password, role) => {
     name,
     email: email.toLowerCase(),
     password_hash,
+    ibs_lead_id,
     role: userRole,
   });
 

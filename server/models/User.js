@@ -10,6 +10,10 @@ const User = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    ibs_lead_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,

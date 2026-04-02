@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import AddModal from '../components/AddModal';
+import { useAuth } from '../context/AuthContext';
 
 const PRIORITY_LABELS = {
   0: 'P0 · Do Now',
@@ -51,6 +52,7 @@ const COMM_COLORS = 'bg-teal-100 text-teal-700 border-teal-200';
 
 export default function DraftsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [tasks, setTasks]       = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -223,6 +225,7 @@ export default function DraftsPage() {
         ibsLeads={ibsLeads}
         customers={customers}
         editTask={editTask}
+        isCollaboratorTask={user && editTask && editTask.user_id !== user.id}
       />
     </div>
   );
