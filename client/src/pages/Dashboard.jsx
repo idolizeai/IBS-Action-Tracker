@@ -311,7 +311,7 @@ export default function Dashboard() {
         </div>
 
         {/* Filter bar */}
-        <div className="px-4 pb-2 overflow-x-auto scrollbar-none">
+        <div className="px-4 pb-2">
           <FilterBar active={filters} onChange={setFilters} ibsLeads={ibsLeads} customers={customers} />
         </div>
 

@@ -114,7 +114,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
     setForm(f => ({ ...f, title: (f.title ? f.title + ' ' : '') + text }));
   }, []);
   
-  const { listening, toggle: toggleMic, supported: micSupported } = useSpeech(handleSpeechResult);
+  const { listening, toggle: toggleMic, supported: micSupported, interimTranscript } = useSpeech(handleSpeechResult);
 
   const isComplete = form.priority !== null &&
     form.function_type && form.ibs_lead_id && form.customer_id &&
@@ -272,10 +272,17 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                     )}
                   </div>
                   {listening && (
-                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1.5 font-medium">
-                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse inline-block" />
-                      Listening…
-                    </p>
+                    <div className="mt-2 px-3 py-2 rounded-lg bg-red-50 border border-red-100">
+                      <p className="text-xs text-red-500 flex items-center gap-1.5 font-semibold mb-1">
+                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse inline-block" />
+                        Listening… speak now
+                      </p>
+                      {interimTranscript ? (
+                        <p className="text-sm text-slate-500 italic leading-snug">{interimTranscript}</p>
+                      ) : (
+                        <p className="text-xs text-slate-400">Words will appear here as you speak</p>
+                      )}
+                    </div>
                   )}
                 </div>
 

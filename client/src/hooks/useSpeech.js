@@ -1,41 +1,39 @@
-import { useState, useRef, useCallback } from 'react';
+import { useEffect } from 'react';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 export function useSpeech(onResult) {
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef(null);
+  const {
+    interimTranscript,
+    finalTranscript,
+    listening,
+    browserSupportsSpeechRecognition,
+    resetTranscript,
+  } = useSpeechRecognition();
 
-  const supported = typeof window !== 'undefined' &&
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  // When a final result arrives, pass it up then clear
+  useEffect(() => {
+    if (!finalTranscript) return;
+    onResult(finalTranscript);
+    resetTranscript();
+  }, [finalTranscript]); // eslint-disable-line
 
-  const start = useCallback(() => {
-    if (!supported) return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SR();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
+  function start() {
+    resetTranscript();
+    SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
+  }
 
-    recognition.onresult = e => {
-      const transcript = e.results[0][0].transcript;
-      onResult(transcript);
-    };
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
+  function stop() {
+    SpeechRecognition.stopListening();
+  }
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
-  }, [supported, onResult]);
-
-  const stop = useCallback(() => {
-    recognitionRef.current?.stop();
-    setListening(false);
-  }, []);
-
-  const toggle = useCallback(() => {
+  function toggle() {
     listening ? stop() : start();
-  }, [listening, start, stop]);
+  }
 
-  return { listening, toggle, supported };
+  return {
+    listening,
+    toggle,
+    supported: browserSupportsSpeechRecognition,
+    interimTranscript, // live words as you speak
+  };
 }
