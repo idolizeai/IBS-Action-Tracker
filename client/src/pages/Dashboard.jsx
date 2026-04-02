@@ -33,18 +33,18 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [tasks, setTasks]               = useState([]);
-  const [ibsLeads, setIbsLeads]         = useState([]);
-  const [customers, setCustomers]       = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [addOpen, setAddOpen]           = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [ibsLeads, setIbsLeads] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [editTask, setEditTask]         = useState(null);
-  const [masterOpen, setMasterOpen]     = useState(false);
-  const [bellOpen, setBellOpen]         = useState(false);
-  const [drawerOpen, setDrawerOpen]     = useState(false); // ← slide drawer
-  const [viewMode, setViewMode]         = useState('kanban');
-  const [filters, setFilters]           = useState({ priority: null, ibs_lead: null, customer: null, function_type: null, financial_impact: null });
+  const [editTask, setEditTask] = useState(null);
+  const [masterOpen, setMasterOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false); // ← slide drawer
+  const [viewMode, setViewMode] = useState('kanban');
+  const [filters, setFilters] = useState({ priority: null, ibs_lead: null, customer: null, function_type: null, financial_impact: null });
 
   const [overdueTasks, setOverdueTasks] = useState([]);
 
@@ -60,11 +60,11 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const params = { done: false };
-      if (filters.priority !== null)    params.priority         = filters.priority;
-      if (filters.ibs_lead)             params.ibs_lead_id      = filters.ibs_lead;
-      if (filters.customer)             params.customer_id      = filters.customer;
-      if (filters.function_type)        params.function_type    = filters.function_type;
-      if (filters.financial_impact)     params.financial_impact = filters.financial_impact;
+      if (filters.priority !== null) params.priority = filters.priority;
+      if (filters.ibs_lead) params.ibs_lead_id = filters.ibs_lead;
+      if (filters.customer) params.customer_id = filters.customer;
+      if (filters.function_type) params.function_type = filters.function_type;
+      if (filters.financial_impact) params.financial_impact = filters.financial_impact;
       const { data } = await api.get('/tasks', { params });
       setTasks(data);
     } catch {
@@ -80,7 +80,7 @@ export default function Dashboard() {
 
   function handleTaskUpdated(data) {
     if (data.done) setTasks(ts => ts.filter(t => t.id !== data.id));
-    else           setTasks(ts => ts.map(t => t.id === data.id ? data : t));
+    else setTasks(ts => ts.map(t => t.id === data.id ? data : t));
   }
 
   function handleTaskDeleted(id) { setTasks(ts => ts.filter(t => t.id !== id)); }
@@ -88,7 +88,7 @@ export default function Dashboard() {
   function handleEdit(task) { setEditTask(task); setAddOpen(true); }
 
   function handleMasterUpdate(type, newList) {
-    if (type === 'leads')     setIbsLeads(newList);
+    if (type === 'leads') setIbsLeads(newList);
     if (type === 'customers') setCustomers(newList);
   }
 
@@ -116,15 +116,15 @@ export default function Dashboard() {
     <div className="min-h-screen bg-surface flex flex-col">
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
-        <div className="px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
+        <div className="px-4 py-3 flex items-center md:gap-3 gap-1 ">
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 mr-1">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 11l3 3L22 4"/>
-                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
               </svg>
             </div>
             <div className="hidden sm:flex items-center gap-1.5">
@@ -147,20 +147,20 @@ export default function Dashboard() {
           <div className="flex-1" />
 
           {/* Draft button */}
-        <button onClick={() => navigate('/drafts')}
-  className="flex items-center gap-1.5 px-3 sm:px-5 py-2 text-sm font-semibold rounded-full bg-red-500 text-white hover:bg-red-600 active:scale-95 transition-all shadow-sm shadow-red-500/20"
-  title="Drafts">
-  <FileText size={15} />
-  <span className="hidden sm:inline">Draft</span>
-</button>
+          <button onClick={() => navigate('/drafts')}
+            className="flex items-center gap-1.5 px-3 sm:px-5 py-2 text-sm font-semibold rounded-full bg-red-500 text-white hover:bg-red-600 active:scale-95 transition-all shadow-sm shadow-red-500/20"
+            title="Drafts">
+            <FileText size={15} />
+            <span className="hidden sm:inline">Draft</span>
+          </button>
 
           {/* List view */}
-         <button onClick={() => navigate('/list')}
-  className="btn-ghost p-2 sm:flex sm:items-center sm:gap-1.5 sm:px-3 sm:py-2 sm:rounded-lg text-slate-600 hover:text-slate-900"
-  title="List View">
-  <List size={15} />
-  <span className="hidden sm:inline text-sm font-semibold">List</span>
-</button>
+          <button onClick={() => navigate('/list')}
+            className="btn-ghost p-2 sm:flex sm:items-center sm:gap-1.5 sm:px-3 sm:py-2 sm:rounded-lg text-slate-600 hover:text-slate-900"
+            title="List View">
+            <List size={15} />
+            <span className="hidden sm:inline text-sm font-semibold">List</span>
+          </button>
           {/* Refresh */}
           <button onClick={fetchTasks} className="btn-ghost p-2" title="Refresh">
             <RefreshCw size={15} className={loading ? 'animate-spin text-blue-600' : ''} />
@@ -189,7 +189,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50"
+                  className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 sm:w-80 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50"
                 >
                   {/* Header */}
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
@@ -208,42 +208,42 @@ export default function Dashboard() {
                   </div>
 
                   {/* Preview — first 3 tasks only */}
-                {/* Preview — ALL tasks, scrollable */}
-<div className="max-h-72 overflow-y-auto">
-  {overdueTasks.length === 0 ? (
-    <div className="px-4 py-8 text-center">
-      <span className="text-2xl">✅</span>
-      <p className="text-sm text-slate-400 mt-2 font-medium">All caught up!</p>
-      <p className="text-xs text-slate-300 mt-1">No tasks pending over 1 hour</p>
-    </div>
-  ) : (
-    overdueTasks.map(task => {
-      const hrs = Math.floor(
-        (new Date() - new Date(task.created_at?.replace?.("Z", "") ?? task.created_at)) / (1000 * 60 * 60)
-      );
-      return (
-        <div
-          key={task.id}
-          className="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer"
-          onClick={() => { handleEdit(task); setBellOpen(false); }}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <span className="text-sm font-medium text-slate-800 flex-1 leading-snug">{task.title}</span>
-            <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5 font-medium">{hrs}h ago</span>
-          </div>
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${PRIORITY_COLORS[task.priority] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-              {PRIORITY_LABELS[task.priority] ?? `P${task.priority}`}
-            </span>
-            {task.customer_name && (
-              <span className="text-[10px] text-slate-400 font-medium truncate max-w-[120px]">{task.customer_name}</span>
-            )}
-          </div>
-        </div>
-      );
-    })
-  )}
-</div>
+                  {/* Preview — ALL tasks, scrollable */}
+                  <div className="max-h-72 overflow-y-auto">
+                    {overdueTasks.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <span className="text-2xl">✅</span>
+                        <p className="text-sm text-slate-400 mt-2 font-medium">All caught up!</p>
+                        <p className="text-xs text-slate-300 mt-1">No tasks pending over 1 hour</p>
+                      </div>
+                    ) : (
+                      overdueTasks.map(task => {
+                        const hrs = Math.floor(
+                          (new Date() - new Date(task.created_at?.replace?.("Z", "") ?? task.created_at)) / (1000 * 60 * 60)
+                        );
+                        return (
+                          <div
+                            key={task.id}
+                            className="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer"
+                            onClick={() => { handleEdit(task); setBellOpen(false); }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="text-sm font-medium text-slate-800 flex-1 leading-snug">{task.title}</span>
+                              <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5 font-medium">{hrs}h ago</span>
+                            </div>
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${PRIORITY_COLORS[task.priority] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                                {PRIORITY_LABELS[task.priority] ?? `P${task.priority}`}
+                              </span>
+                              {task.customer_name && (
+                                <span className="text-[10px] text-slate-400 font-medium truncate max-w-[120px]">{task.customer_name}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
 
 
 
@@ -320,11 +320,10 @@ export default function Dashboard() {
           <div className="inline-flex items-center bg-slate-100 rounded-xl p-1 gap-0.5 ">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                viewMode === 'kanban'
-                  ? 'bg-red-500 text-white shadow-sm shadow-red-500/30'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${viewMode === 'kanban'
+                ? 'bg-red-500 text-white shadow-sm shadow-red-500/30'
+                : 'text-slate-500 hover:text-slate-700'
+                }`}
             >
               <LayoutGrid size={15} />
               Priority
@@ -332,11 +331,10 @@ export default function Dashboard() {
 
             <button
               onClick={() => setViewMode('eisenhower')}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                viewMode === 'eisenhower'
-                  ? 'bg-red-500 text-white shadow-sm shadow-red-500/30'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${viewMode === 'eisenhower'
+                ? 'bg-red-500 text-white shadow-sm shadow-red-500/30'
+                : 'text-slate-500 hover:text-slate-700'
+                }`}
             >
               <Grid2X2 size={15} />
               Matrix
@@ -351,9 +349,9 @@ export default function Dashboard() {
         </div>
 
         <div
-  className="h-[2px]"
-  style={{ background: `linear-gradient(90deg, ${BRAND} 0%, #DC2626 40%, transparent 100%)` }}
-/>
+          className="h-[2px]"
+          style={{ background: `linear-gradient(90deg, ${BRAND} 0%, #DC2626 40%, transparent 100%)` }}
+        />
       </header>
 
       {/* ── Full Slide Drawer ── */}
@@ -496,8 +494,8 @@ export default function Dashboard() {
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <svg className="animate-spin w-7 h-7 text-blue-500" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
           </div>
         ) : (
@@ -539,6 +537,7 @@ export default function Dashboard() {
         ibsLeads={ibsLeads}
         customers={customers}
         editTask={editTask}
+        isCollaboratorTask={user && editTask && editTask.user_id !== user.id}
       />
     </div>
   );

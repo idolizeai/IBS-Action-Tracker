@@ -74,16 +74,16 @@ const QUADRANTS = [
 ];
 
 const PRIO_BADGE = {
-  0: { label: 'P0 · Now',    cls: 'bg-red-600    text-white' },
-  1: { label: 'P1 · Today',  cls: 'bg-orange-500 text-white' },
-  2: { label: 'P2 · Week',   cls: 'bg-blue-600   text-white' },
-  3: { label: 'P3 · Wknd',  cls: 'bg-amber-500  text-white' },
-  4: { label: 'P4 · TBD',   cls: 'bg-slate-500  text-white' },
+  0: { label: 'P0 · Now', cls: 'bg-red-600    text-white' },
+  1: { label: 'P1 · Today', cls: 'bg-orange-500 text-white' },
+  2: { label: 'P2 · Week', cls: 'bg-blue-600   text-white' },
+  3: { label: 'P3 · Wknd', cls: 'bg-amber-500  text-white' },
+  4: { label: 'P4 · TBD', cls: 'bg-slate-500  text-white' },
 };
 
 const cardVariants = {
   hidden: { opacity: 0, y: 10 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.18 } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.18 } },
 };
 
 function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit, quadrantIndex, draggedTask, dragOverQuad, onDragStart, onDragEnd, onDragOver, onDragEnter, onDragLeave, onDrop }) {
@@ -96,9 +96,8 @@ function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit, quadrantIndex, d
       onDragEnter={() => onDragEnter(quadrantIndex)}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, quadrantIndex)}
-      className={`flex flex-col rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden transition-all duration-200 ${
-        isOverQuad && draggedTask ? 'shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105' : ''
-      }`}
+      className={`flex flex-col rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden transition-all duration-200 ${isOverQuad && draggedTask ? 'shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105' : ''
+        }`}
       style={{ minHeight: 260 }}
     >
       {/* Header */}
@@ -139,9 +138,8 @@ function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit, quadrantIndex, d
                 draggable
                 onDragStart={(e) => onDragStart(e, task)}
                 onDragEnd={onDragEnd}
-                className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 ${
-                  draggedTask?.id === task.id ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
-                }`}
+                className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 ${draggedTask?.id === task.id ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+                  }`}
               >
                 {showPrioBadge && (
                   <div className="flex justify-end mb-1">
@@ -210,7 +208,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
       onUpdated(data);
       toast.success(`Moved to ${destQuadrant.label}`);
     } catch (e) {
-      toast.error('Failed to update priority');
+      toast.error(e.response.data.error || 'Failed to update priority');
       console.error(e);
     } finally {
       setDraggedTask(null);
@@ -237,7 +235,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-300" />
               <span className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase text-slate-500 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-slate-400" />
-                 Urgent
+                Urgent
               </span>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-300" />
             </div>

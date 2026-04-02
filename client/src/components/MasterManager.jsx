@@ -9,13 +9,18 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
   const [newName, setNewName] = useState('');
   const [newInternal, setNewInternal] = useState(false);
   const [saving, setSaving] = useState(false);
-
+  const [newEmail, setNewEmail] = useState('');
   async function handleAdd() {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      await onAdd({ name: newName.trim(), is_internal: newInternal });
+      await onAdd({
+        name: newName.trim(),
+        ...(title === 'IBS Leads' ? { email: newEmail.trim() } : {}),
+        ...(title === 'Customers' ? { is_internal: newInternal } : {})
+      });
       setNewName('');
+      setNewEmail('');
       setNewInternal(false);
       setAdding(false);
     } catch (err) {
@@ -24,7 +29,7 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
       setSaving(false);
     }
   }
-
+  console.log("Ibs items", items)
   return (
     <div className="glass-card p-5">
       <div className="flex items-center justify-between mb-4">
@@ -49,7 +54,7 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
             className="mb-4 overflow-hidden"
           >
             <div className="flex gap-2 items-end p-3 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="flex-1">
+              <div className="flex-1 space-y-2">
                 <input
                   type="text"
                   className="input-field text-sm"
@@ -59,6 +64,16 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
                   onKeyDown={e => e.key === 'Enter' && handleAdd()}
                   autoFocus
                 />
+
+                {title === 'IBS Leads' && (
+                  <input
+                    type="email"
+                    className="input-field text-sm"
+                    placeholder="Enter email…"
+                    value={newEmail}
+                    onChange={e => setNewEmail(e.target.value)}
+                  />
+                )}
               </div>
               {title === 'Customers' && (
                 <label className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer whitespace-nowrap pb-3 font-medium">
@@ -94,14 +109,18 @@ function MasterItem({ item, onEdit, onDelete, showInternal }) {
   const [name, setName] = useState(item.name);
   const [isInternal, setIsInternal] = useState(item.is_internal);
   const [saving, setSaving] = useState(false);
-
+  const [email, setEmail] = useState(item.email || '');
   async function save() {
     setSaving(true);
     try {
-      await onEdit(item.id, { name: name.trim(), ...(showInternal ? { is_internal: isInternal } : {}) });
+      await onEdit(item.id, {
+        name: name.trim(),
+        ...(item.email !== undefined ? { email: email.trim() } : {}),
+        ...(showInternal ? { is_internal: isInternal } : {})
+      });
       setEditing(false);
-    } catch {
-      toast.error('Failed to update');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update');
     } finally {
       setSaving(false);
     }
@@ -111,13 +130,25 @@ function MasterItem({ item, onEdit, onDelete, showInternal }) {
     <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 group border border-transparent hover:border-slate-200 transition-all">
       {editing ? (
         <>
-          <input
-            className="flex-1 bg-white text-sm text-slate-800 outline-none border-b-2 border-blue-500 pb-0.5"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && save()}
-            autoFocus
-          />
+          <div className="flex-1 space-y-1">
+
+            <input
+              className="flex-1 bg-white text-sm text-slate-800 outline-none border-b-2 border-blue-500 pb-0.5"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && save()}
+              autoFocus
+            />
+
+            {item.email !== undefined && (
+              <input
+                className="w-full bg-white text-xs text-slate-600 outline-none border-b border-slate-300 pb-0.5"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Email"
+              />
+            )}
+          </div>
           {showInternal && (
             <label className="flex items-center gap-1 text-xs text-slate-600 cursor-pointer font-medium">
               <input type="checkbox" checked={isInternal} onChange={e => setIsInternal(e.target.checked)} />
@@ -133,9 +164,17 @@ function MasterItem({ item, onEdit, onDelete, showInternal }) {
         </>
       ) : (
         <>
-          <span className={`flex-1 text-sm font-medium ${item.active ? 'text-slate-700' : 'text-slate-400 line-through'}`}>
-            {item.name}
-          </span>
+          <div className="flex-1">
+            <div className={`text-sm font-medium ${item.active ? 'text-slate-700' : 'text-slate-400 line-through'}`}>
+              {item.name}
+            </div>
+
+            {item.email && (
+              <div className="text-xs text-slate-400">
+                {item.email}
+              </div>
+            )}
+          </div>
           {showInternal && item.is_internal && (
             <span className="text-xs text-teal-700 border border-teal-300 bg-teal-50 px-2 py-0.5 rounded-full font-semibold">
               Internal
@@ -159,8 +198,8 @@ function MasterItem({ item, onEdit, onDelete, showInternal }) {
 }
 
 export default function MasterManager({ ibsLeads, customers, onUpdate }) {
-  async function addLead({ name }) {
-    const { data } = await api.post('/masters/ibs-leads', { name });
+  async function addLead({ name, email }) {
+    const { data } = await api.post('/masters/ibs-leads', { name, email });
     onUpdate('leads', [...ibsLeads, data]);
     toast.success('Lead added');
   }
@@ -171,8 +210,8 @@ export default function MasterManager({ ibsLeads, customers, onUpdate }) {
   }
   async function deleteLead(id) {
     await api.delete(`/masters/ibs-leads/${id}`);
-    onUpdate('leads', ibsLeads.filter(l => l.id !== id));
-    toast.success('Deleted');
+    onUpdate('leads', ibsLeads.map(l => l.id === id ? { ...l, active: false } : l));
+    toast.success('Ibs Lead In-Active Successfully');
   }
   async function addCustomer({ name, is_internal }) {
     const { data } = await api.post('/masters/customers', { name, is_internal });

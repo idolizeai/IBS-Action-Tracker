@@ -6,15 +6,15 @@ import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
   { path: '/dashboard', label: 'Dashboard', Icon: LayoutGrid },
-  { path: '/list',      label: 'List View', Icon: List },
+  { path: '/list', label: 'List View', Icon: List },
 ];
 
 export default function Navbar({ actions, onSettings, settingsActive }) {
-  const navigate           = useNavigate();
-  const location           = useLocation();
-  const { user, logout }   = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef            = useRef(null);
+  const menuRef = useRef(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -35,8 +35,8 @@ export default function Navbar({ actions, onSettings, settingsActive }) {
         <div className="flex items-center gap-2 mr-3 flex-shrink-0">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
             </svg>
           </div>
           <span className="font-bold text-slate-900 text-sm hidden sm:block">IBS Actions</span>
@@ -50,11 +50,10 @@ export default function Navbar({ actions, onSettings, settingsActive }) {
               <button
                 key={path}
                 onClick={() => navigate(path)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-150 ${
-                  active
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-150 ${active
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-                }`}
+                  }`}
               >
                 <Icon size={15} />
                 <span>{label}</span>

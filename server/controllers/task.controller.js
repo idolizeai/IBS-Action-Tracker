@@ -23,7 +23,7 @@ const validateTaskBody = (body) => {
 
 const list = async (req, res, next) => {
   try {
-    const tasks = await TaskService.getTasksForUser(req.user.id, req.query);
+    const tasks = await TaskService.getTasksForUser(req.user, req.query);
     success(res, tasks);
   } catch (err) {
     next(err);
@@ -44,7 +44,7 @@ const create = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    const task = await TaskService.updateTask(Number(req.params.id), req.user.id, req.body);
+    const task = await TaskService.updateTask(Number(req.params.id), req.user, req.body);
     if (!task) return notFound(res, 'Task not found');
     success(res, task);
   } catch (err) {
@@ -55,10 +55,11 @@ const update = async (req, res, next) => {
 
 const remove = async (req, res, next) => {
   try {
-    const deleted = await TaskService.deleteTask(Number(req.params.id), req.user.id);
+    const deleted = await TaskService.deleteTask(Number(req.params.id), req.user);
     if (!deleted) return notFound(res, 'Task not found');
     success(res, { deleted: true });
   } catch (err) {
+    if (err.statusCode) return error(res, err.message, err.statusCode);
     next(err);
   }
 };

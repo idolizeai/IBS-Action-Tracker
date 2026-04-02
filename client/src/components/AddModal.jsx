@@ -43,7 +43,7 @@ const EMPTY = {
   comm_mode: null,
 };
 
-export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, editTask }) {
+export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, editTask, isCollaboratorTask = false }) {
   const [form, setForm]         = useState(EMPTY);
   const [saving, setSaving]     = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
@@ -212,11 +212,13 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 flex-shrink-0">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
-                    {editTask ? 'Edit Task' : 'New Action Item'}
+                    {editTask ? (isCollaboratorTask ? 'View Task' : 'Edit Task') : 'New Action Item'}
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {filledCount}/7 fields completed
-                  </p>
+                  {!isCollaboratorTask && (
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {filledCount}/7 fields completed
+                    </p>
+                  )}
                 </div>
                 <button onClick={onClose} className="btn-ghost p-2 rounded-lg">
                   <X size={18} />
@@ -249,14 +251,15 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                   </label>
                   <div className="relative">
                     <textarea
-                      className="input-field pr-12 resize-none"
+                      className={`input-field pr-12 resize-none ${isCollaboratorTask ? 'bg-slate-50 cursor-default' : ''}`}
                       rows={2}
-                      placeholder="Type your action item…"
+                      placeholder={isCollaboratorTask ? '' : 'Type your action item…'}
+                      readOnly={isCollaboratorTask}
                       value={form.title}
                       onChange={e => set('title', e.target.value)}
-                      autoFocus={!editTask}
+                      autoFocus={!editTask && !isCollaboratorTask}
                     />
-                    {micSupported && (
+                    {micSupported && !isCollaboratorTask && (
                       <button
                         type="button"
                         onClick={toggleMic}
@@ -286,66 +289,68 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                   )}
                 </div>
 
-                <BubbleSelector label="Priority"           options={PRIORITY_OPTS}  selected={form.priority}         onSelect={v => set('priority', v)} />
-                <BubbleSelector label="Function"           options={functionOpts}   selected={form.function_type}    onSelect={v => set('function_type', v)} />
-                <BubbleSelector label="IBS Lead"           options={ibsOpts}        selected={form.ibs_lead_id}      onSelect={v => set('ibs_lead_id', v)} />
-                <BubbleSelector label="Customer"           options={customerOpts}   selected={form.customer_id}      onSelect={v => set('customer_id', v)} />
-                <BubbleSelector label="Financial Impact"   options={FINANCIAL_OPTS} selected={form.financial_impact} onSelect={v => set('financial_impact', v)} />
-                <BubbleSelector label="Communication Mode" options={COMM_OPTS}      selected={form.comm_mode}        onSelect={v => set('comm_mode', v)} />
+                <BubbleSelector label="Priority"           options={PRIORITY_OPTS}  selected={form.priority}         onSelect={v => set('priority', v)}         disabled={isCollaboratorTask} />
+                <BubbleSelector label="Function"           options={functionOpts}   selected={form.function_type}    onSelect={v => set('function_type', v)}    disabled={isCollaboratorTask} />
+                <BubbleSelector label="IBS Lead"           options={ibsOpts}        selected={form.ibs_lead_id}      onSelect={v => set('ibs_lead_id', v)}      disabled={isCollaboratorTask} />
+                <BubbleSelector label="Customer"           options={customerOpts}   selected={form.customer_id}      onSelect={v => set('customer_id', v)}      disabled={isCollaboratorTask} />
+                <BubbleSelector label="Financial Impact"   options={FINANCIAL_OPTS} selected={form.financial_impact} onSelect={v => set('financial_impact', v)} disabled={isCollaboratorTask} />
+                <BubbleSelector label="Communication Mode" options={COMM_OPTS}      selected={form.comm_mode}        onSelect={v => set('comm_mode', v)}        disabled={isCollaboratorTask} />
               </div>
 
               {/* Footer */}
-<div className="px-4 sm:px-5 py-3 sm:py-4 border-t border-slate-100 flex-shrink-0 bg-slate-50 rounded-b-2xl sticky bottom-0">                {/* Progress bar */}
-                <div className="flex gap-1 mb-3">
-                  {filled.map((done, i) => (
-                    <div
-                      key={i}
-                      className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                        done ? 'bg-blue-500' : 'bg-slate-200'
-                      }`}
-                    />
-                  ))}
-                </div>
+              {!isCollaboratorTask && (
+                <div className="px-4 sm:px-5 py-3 sm:py-4 border-t border-slate-100 flex-shrink-0 bg-slate-50 rounded-b-2xl sticky bottom-0">                {/* Progress bar */}
+                  <div className="flex gap-1 mb-3">
+                    {filled.map((done, i) => (
+                      <div
+                        key={i}
+                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                          done ? 'bg-blue-500' : 'bg-slate-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
 
-                {/* Buttons */}
-                <div className="flex gap-2">
-                  {/* Save as Draft — shown for new tasks, existing drafts, or incomplete edits */}
-                  {showDraftButton && (
+                  {/* Buttons */}
+                  <div className="flex gap-2">
+                    {/* Save as Draft — shown for new tasks, existing drafts, or incomplete edits */}
+                    {showDraftButton && (
+                      <button
+                        onClick={() => handleSave(true)}
+                        disabled={!canSaveDraft || saving}
+                        className="btn-ghost flex-1 flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        {saving ? (
+                          <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                          </svg>
+                        ) : <FileText size={16} />}
+                        <span>{saving ? 'Saving…' : 'Save as Draft'}</span>
+                      </button>
+                    )}
+
+                    {/* Primary Save / Update Button */}
                     <button
-                      onClick={() => handleSave(true)}
-                      disabled={!canSaveDraft || saving}
-                      className="btn-ghost flex-1 flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      onClick={() => handleSave(false)}
+                      disabled={!isComplete || saving}
+                      className="btn-primary flex-1 flex items-center justify-center gap-2"
                     >
                       {saving ? (
                         <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                         </svg>
-                      ) : <FileText size={16} />}
-                      <span>{saving ? 'Saving…' : 'Save as Draft'}</span>
+                      ) : <Save size={16} />}
+                      {saving
+                        ? 'Saving…'
+                        : isComplete
+                          ? (editTask ? 'Update Task' : 'Save Task')
+                          : `${7 - filledCount} field${7 - filledCount !== 1 ? 's' : ''} remaining`}
                     </button>
-                  )}
-
-                  {/* Primary Save / Update Button */}
-                  <button
-                    onClick={() => handleSave(false)}
-                    disabled={!isComplete || saving}
-                    className="btn-primary flex-1 flex items-center justify-center gap-2"
-                  >
-                    {saving ? (
-                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                      </svg>
-                    ) : <Save size={16} />}
-                    {saving
-                      ? 'Saving…'
-                      : isComplete
-                        ? (editTask ? 'Update Task' : 'Save Task')
-                        : `${7 - filledCount} field${7 - filledCount !== 1 ? 's' : ''} remaining`}
-                  </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </motion.div>
         </>

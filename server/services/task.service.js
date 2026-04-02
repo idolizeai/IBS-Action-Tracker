@@ -1,9 +1,10 @@
 const { Op, literal } = require('sequelize');
-const { Task, IBSLead, Customer } = require('../models');
+const { Task, IBSLead, Customer, User } = require('../models');
 
 const TASK_INCLUDE = [
   { model: IBSLead, as: 'ibsLead', attributes: ['id', 'name'] },
   { model: Customer, as: 'customer', attributes: ['id', 'name', 'is_internal'] },
+  { model: User, attributes: ['id', 'name'] },
 ];
 
 const flattenTask = (task) => {
@@ -13,24 +14,38 @@ const flattenTask = (task) => {
     ibs_lead_name: t.ibsLead?.name ?? null,
     customer_name: t.customer?.name ?? null,
     is_internal:   t.customer?.is_internal ?? null,
+    owner_name:    t.User?.name ?? null,
     ibsLead:       undefined,
     customer:      undefined,
+    User:          undefined,
   };
 };
 
-const getTasksForUser = async (userId, filters = {}) => {
+const getTasksForUser = async (user, filters = {}) => {
   const { priority, function_type, ibs_lead_id, customer_id, financial_impact, done, is_draft } = filters;
 
-  const where = { user_id: userId };
+  let where = {};
+
+  if (is_draft === 'true') {
+    where = { user_id: user.id, is_draft: true };
+  } else {
+    const conditions = [{ user_id: user.id }];
+    if (user.ibs_lead_id) {
+      conditions.push({ ibs_lead_id: user.ibs_lead_id });
+    }
+    where = {
+      [Op.or]: conditions,
+      is_draft: false
+    };
+  }
 
   if (priority !== undefined && priority !== '') where.priority = Number(priority);
   if (function_type) where.function_type = function_type;
   if (ibs_lead_id) where.ibs_lead_id = Number(ibs_lead_id);
   if (customer_id) where.customer_id = Number(customer_id);
-  
   if (financial_impact) where.financial_impact = financial_impact;
-  where.done = done === 'true' ? true : false;
-is_draft === 'true' ? where.is_draft = true : where.is_draft = false;
+
+  where.done = (done === 'true');
 
   const tasks = await Task.findAll({
     where,
@@ -44,28 +59,26 @@ is_draft === 'true' ? where.is_draft = true : where.is_draft = false;
   return tasks.map((task) => {
     const flattened = flattenTask(task);
     const missing = [];
-if (task.is_draft) {
-  
-  // Check for missing fields
-  if (flattened.priority === null || flattened.priority === undefined) {
-    missing.push('Priority');
-  }
-  if (!flattened.function_type) {
-    missing.push('Function Type');
+    if (task.is_draft) {
+      if (flattened.priority === null || flattened.priority === undefined) {
+        missing.push('Priority');
+      }
+      if (!flattened.function_type) {
+        missing.push('Function Type');
+      }
+      if (!flattened.ibs_lead_id) {
+        missing.push('IBS Lead');
+      }
+      if (!flattened.customer_id) {
+        missing.push('Customer');
+      }
+      if (!flattened.financial_impact) {
+        missing.push('Financial Impact');
+      }
+      if (!flattened.comm_mode) {
+        missing.push('Communication Mode');
+      }
     }
-    if (!flattened.ibs_lead_id) {
-      missing.push('IBS Lead');
-    }
-    if (!flattened.customer_id) {
-      missing.push('Customer');
-    }
-    if (!flattened.financial_impact) {
-      missing.push('Financial Impact');
-    }
-    if (!flattened.comm_mode) {
-      missing.push('Communication Mode');
-    }
-  }
 
     return { ...flattened, missing };
   });
@@ -90,9 +103,18 @@ console.log('Creating task with data:', data);
   return flattenTask(task);
 };
 
-const updateTask = async (taskId, userId, updates) => {
-  const task = await Task.findOne({ where: { id: taskId, user_id: userId } });
+const updateTask = async (taskId, user, updates) => {
+  const task = await Task.findByPk(taskId);
   if (!task) return null;
+
+  if (task.user_id !== user.id) {
+    if (user.ibs_lead_id && task.ibs_lead_id === user.ibs_lead_id) {
+      const err = new Error('a colloborator cannot update the task');
+      err.statusCode = 403;
+      throw err;
+    }
+    return null;
+  }
 
   const allowed = ['title', 'priority', 'function_type', 'ibs_lead_id', 'customer_id', 'financial_impact', 'comm_mode', 'done', 'is_draft'];
   const patch = {};
@@ -128,9 +150,21 @@ const updateTask = async (taskId, userId, updates) => {
   return flattenTask(task);
 };
 
-const deleteTask = async (taskId, userId) => {
-  const rows = await Task.destroy({ where: { id: taskId, user_id: userId } });
-  return rows > 0;
+const deleteTask = async (taskId, user) => {
+  const task = await Task.findByPk(taskId);
+  if (!task) return false;
+
+  if (task.user_id !== user.id) {
+    if (user.ibs_lead_id && task.ibs_lead_id === user.ibs_lead_id) {
+      const err = new Error('a colloborator cannot update the task');
+      err.statusCode = 403;
+      throw err;
+    }
+    return false;
+  }
+
+  await task.destroy();
+  return true;
 };
 
 module.exports = { getTasksForUser, createTask, updateTask, deleteTask };

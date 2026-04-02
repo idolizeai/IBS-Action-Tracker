@@ -28,7 +28,7 @@ function Dropdown({ label, options, value, onChange, activeClass }) {
   }, []);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className={`relative ${open ? 'z-50' : 'z-10'}`}>
       {/* Button */}
       <button
         onClick={() => setOpen(!open)}

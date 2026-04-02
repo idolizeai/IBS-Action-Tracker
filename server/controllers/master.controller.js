@@ -14,11 +14,12 @@ const getIBSLeads = async (req, res, next) => {
 
 const createIBSLead = async (req, res, next) => {
   try {
-    const { name } = req.body;
-    if (!name) return error(res, 'name is required');
-    const lead = await MasterService.createIBSLead(name);
+    const { name, email } = req.body;
+    if (!name || !email) return error(res, 'name and email are required');
+    const lead = await MasterService.createIBSLead(name, email);
     created(res, lead);
   } catch (err) {
+    if (err.statusCode) return error(res, err.message, err.statusCode);
     next(err);
   }
 };

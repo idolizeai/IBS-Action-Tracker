@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square } from 'lucide-react';
+import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square, User } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import AddModal from '../components/AddModal';
+import { useAuth } from '../context/AuthContext';
 
 const PRIO_LABEL = { 0: 'P0 · Do Now', 1: 'P1 · Today', 2: 'P2 · This Week', 3: 'P3 · Weekend', 4: 'P4 · TBD' };
-const PRIO_CLS   = {
+const PRIO_CLS = {
   0: 'bg-red-100    text-red-700    border-red-300',
   1: 'bg-orange-100 text-orange-700 border-orange-300',
   2: 'bg-amber-100  text-amber-700  border-amber-300',
@@ -32,46 +33,47 @@ function relativeTime(dateStr) {
   const d = new Date(dateStr);
   const diffMs = now - d;
   const diffMin = Math.floor(diffMs / 60000);
-  const diffHr  = Math.floor(diffMs / 3600000);
-  if (diffMin < 1)  return 'just now';
+  const diffHr = Math.floor(diffMs / 3600000);
+  if (diffMin < 1) return 'just now';
   if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr  < 24) return `${diffHr}h ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
   const diffDays = Math.floor(diffMs / 86400000);
   if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7)  return `${diffDays} days ago`;
+  if (diffDays < 7) return `${diffDays} days ago`;
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function groupByPeriod(tasks) {
   const now = new Date();
-  const startOfToday     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfYesterday = new Date(startOfToday - 86400000);
-  const startOfWeek      = new Date(startOfToday - 6 * 86400000);
+  const startOfWeek = new Date(startOfToday - 6 * 86400000);
 
   const groups = [
-    { key: 'today',     label: 'Today',      tasks: [] },
-    { key: 'yesterday', label: 'Yesterday',  tasks: [] },
-    { key: 'week',      label: 'This Week',  tasks: [] },
-    { key: 'earlier',   label: 'Earlier',    tasks: [] },
+    { key: 'today', label: 'Today', tasks: [] },
+    { key: 'yesterday', label: 'Yesterday', tasks: [] },
+    { key: 'week', label: 'This Week', tasks: [] },
+    { key: 'earlier', label: 'Earlier', tasks: [] },
   ];
 
   for (const t of tasks) {
     const d = t.done_at ? new Date(t.done_at) : new Date(0);
-    if (d >= startOfToday)     groups[0].tasks.push(t);
+    if (d >= startOfToday) groups[0].tasks.push(t);
     else if (d >= startOfYesterday) groups[1].tasks.push(t);
     else if (d >= startOfWeek) groups[2].tasks.push(t);
-    else                       groups[3].tasks.push(t);
+    else groups[3].tasks.push(t);
   }
 
   return groups.filter(g => g.tasks.length > 0);
 }
 
 export default function ListView() {
-  const [tasks, setTasks]         = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [showDone, setShowDone]   = useState(false);
-  const [editTask, setEditTask]   = useState(null);
-  const [ibsLeads, setIbsLeads]   = useState([]);
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showDone, setShowDone] = useState(false);
+  const [editTask, setEditTask] = useState(null);
+  const [ibsLeads, setIbsLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
 
   const fetchTasks = useCallback(async () => {
@@ -120,7 +122,7 @@ export default function ListView() {
     setEditTask(null);
   }
 
-  const [draggedTask, setDraggedTask]   = useState(null);
+  const [draggedTask, setDraggedTask] = useState(null);
   const [dragOverPrio, setDragOverPrio] = useState(null);
 
   function handleDragStart(e, task) {
@@ -144,8 +146,8 @@ export default function ListView() {
       const { data } = await api.patch(`/tasks/${draggedTask.id}`, { priority: newPriority });
       setTasks(ts => ts.map(t => t.id === data.id ? data : t));
       toast.success(`Moved to ${PRIO_LABEL[newPriority]}`);
-    } catch {
-      toast.error('Failed to update priority');
+    } catch (e) {
+      toast.error(e.response.data.error || 'Failed to update priority');
     } finally {
       setDraggedTask(null);
     }
@@ -175,11 +177,10 @@ export default function ListView() {
         </div>
         <button
           onClick={() => setShowDone(d => !d)}
-          className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border font-semibold transition-all ${
-            showDone
+          className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border font-semibold transition-all ${showDone
               ? 'bg-green-50 border-green-300 text-green-700'
               : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
-          }`}
+            }`}
         >
           {showDone ? <CheckCheck size={14} /> : <Square size={14} />}
           {showDone ? 'Active' : 'Done'}
@@ -190,8 +191,8 @@ export default function ListView() {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <svg className="animate-spin w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
           </div>
         ) : tasks.length === 0 ? (
@@ -303,69 +304,78 @@ export default function ListView() {
 
                   <div className="space-y-2">
                     <AnimatePresence>
-                      {byPriority[p].map(task => (
-                        <motion.div
-                          key={task.id}
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 6 }}
-                          draggable
-                          onDragStart={e => handleDragStart(e, task)}
-                          onDragEnd={handleDragEnd}
-                          className={`bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${
-                            draggedTask?.id === task.id ? 'opacity-40 scale-95' : ''
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <button
-                              onClick={() => toggleDone(task)}
-                              className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 border-slate-300 hover:border-green-400 bg-white flex items-center justify-center transition-all shadow-sm"
-                            />
+                      {byPriority[p].map(task => {
+                        const isCollaboratorTask = user && task.user_id !== user.id;
+                        return (
+                          <motion.div
+                            key={task.id}
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 6 }}
+                            draggable
+                            onDragStart={e => handleDragStart(e, task)}
+                            onDragEnd={handleDragEnd}
+                            className={`bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${draggedTask?.id === task.id ? 'opacity-40 scale-95' : ''
+                              } ${isCollaboratorTask ? 'border-slate-800 bg-slate-50/50 shadow-inner' : 'border-slate-200'}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <button
+                                onClick={() => toggleDone(task)}
+                                className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 border-slate-300 hover:border-green-400 bg-white flex items-center justify-center transition-all shadow-sm"
+                              />
 
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold leading-snug text-slate-800 break-words min-w-0">
-                                {task.title}
-                              </p>
-
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium">
-                                  {task.function_type}
-                                </span>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium">
-                                  {task.ibs_lead_name}
-                                </span>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 border border-teal-200 font-medium">
-                                  {task.customer_name}
-                                </span>
-                                {task.financial_impact !== 'none' && (
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200 font-medium">
-                                    {FINANCIAL_LABELS[task.financial_impact]}
-                                  </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold leading-snug text-slate-800 break-words min-w-0">
+                                  {task.title}
+                                </p>
+                                {isCollaboratorTask && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <User size={10} className="text-slate-500" />
+                                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                      Owner: {task.owner_name}
+                                    </span>
+                                  </div>
                                 )}
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
-                                  {COMM_LABELS[task.comm_mode]}
-                                </span>
-                              </div>
-                            </div>
 
-                            <button
-                              onClick={() => setEditTask(task)}
-                              className="flex-shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1 rounded-lg hover:bg-blue-50"
-                            >
-                              <SlidersHorizontal size={14} />
-                            </button>
-                          </div>
-                        </motion.div>
-                      ))}
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium">
+                                    {task.function_type}
+                                  </span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium">
+                                    {task.ibs_lead_name}
+                                  </span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 border border-teal-200 font-medium">
+                                    {task.customer_name}
+                                  </span>
+                                  {task.financial_impact !== 'none' && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200 font-medium">
+                                      {FINANCIAL_LABELS[task.financial_impact]}
+                                    </span>
+                                  )}
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                    {COMM_LABELS[task.comm_mode]}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => setEditTask(task)}
+                                className="flex-shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1 rounded-lg hover:bg-blue-50"
+                              >
+                                <SlidersHorizontal size={14} />
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </AnimatePresence>
 
                     {/* Empty group placeholder — always visible so drag targets exist */}
                     {byPriority[p].length === 0 && (
-                      <div className={`h-14 rounded-xl border-2 border-dashed flex items-center justify-center transition-all duration-150 ${
-                        isOver && draggedTask
+                      <div className={`h-14 rounded-xl border-2 border-dashed flex items-center justify-center transition-all duration-150 ${isOver && draggedTask
                           ? 'border-blue-400 bg-blue-50'
                           : 'border-slate-200 bg-slate-50/50'
-                      }`}>
+                        }`}>
                         <span className={`text-xs font-medium ${isOver && draggedTask ? 'text-blue-500' : 'text-slate-300'}`}>
                           {isOver && draggedTask ? 'Drop here' : 'Empty'}
                         </span>
@@ -386,6 +396,7 @@ export default function ListView() {
         ibsLeads={ibsLeads}
         customers={customers}
         editTask={editTask}
+        isCollaboratorTask={user && editTask && editTask.user_id !== user.id}
       />
     </div>
   );
