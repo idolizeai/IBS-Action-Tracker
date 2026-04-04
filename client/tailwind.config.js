@@ -11,10 +11,10 @@ export default {
           border:  '#e2e8f0',
         },
         prio: {
-          0: '#ef4444',   // red    — Do Now
-          1: '#f97316',   // orange — Do Today
-          2: '#eab308',   // yellow — This Week
-          3: '#3b82f6',   // blue   — Weekend
+          0: '#ef4444',   // red
+          1: '#f97316',   // orange
+          2: '#eab308',   // yellow
+          3: '#3b82f6',   // blue
           4: '#6b7280',   // gray
         },
       },
@@ -22,18 +22,10 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       animation: {
-        'fade-in':   'fadeIn 0.2s ease-out',
-        'slide-in':  'slideIn 0.3s ease-out',       // ← for notifications
+        'fade-in': 'fadeIn 0.2s ease-out',
       },
       keyframes: {
-        fadeIn: {
-          from: { opacity: 0 },
-          to:   { opacity: 1 },
-        },
-        slideIn: {                                   // ← slide in from right
-          from: { opacity: 0, transform: 'translateX(100%)' },
-          to:   { opacity: 1, transform: 'translateX(0)' },
-        },
+        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
       },
     },
   },

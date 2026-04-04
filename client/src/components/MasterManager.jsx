@@ -158,8 +158,6 @@ function MasterItem({ item, onEdit, onDelete, showInternal }) {
   );
 }
 
-// ✅ MasterManager no longer handles todos/notifications
-// useNotification(todos) should be called in Dashboard.jsx where todos state lives
 export default function MasterManager({ ibsLeads, customers, onUpdate }) {
   async function addLead({ name }) {
     const { data } = await api.post('/masters/ibs-leads', { name });

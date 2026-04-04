@@ -1,31 +1,69 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, SlidersHorizontal, AlertTriangle, RefreshCw, User, LogOut } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import AddModal from '../components/AddModal';
-import { useAuth } from '../context/AuthContext';
-import idolizeLogo from '../assets/idolize-logo.png';
 
-/* ── Idolize brand ── */
-const BRAND = '#B91C1C';
+const PRIORITY_LABELS = {
+  0: 'P0 · Do Now',
+  1: 'P1 · Do Today',
+  2: 'P2 · This Week',
+  3: 'P3 · Weekend',
+  4: 'P4 · TBD',
+};
+
+const PRIORITY_COLORS = {
+  0: 'bg-red-100 text-red-700 border-red-200',
+  1: 'bg-orange-100 text-orange-700 border-orange-200',
+  2: 'bg-amber-100 text-amber-700 border-amber-200',
+  3: 'bg-blue-100 text-blue-700 border-blue-200',
+  4: 'bg-slate-100 text-slate-600 border-slate-200',
+};
+
+const FINANCIAL_LABELS = {
+  very_high: 'Very High $$$',
+  high: 'High $$',
+  moderate: 'Moderate',
+  low: 'Low',
+  none: 'No Impact',
+};
+
+const FINANCIAL_COLORS = {
+  very_high: 'bg-red-100 text-red-700 border-red-200',
+  high: 'bg-orange-100 text-orange-700 border-orange-200',
+  moderate: 'bg-amber-100 text-amber-700 border-amber-200',
+  low: 'bg-green-100 text-green-700 border-green-200',
+  none: 'bg-slate-100 text-slate-600 border-slate-200',
+};
+
+const COMM_LABELS = {
+  email: 'Email',
+  in_person: 'In-Person',
+  remote_meeting: 'Remote',
+  chat: 'Chat',
+  phone: 'Phone',
+  none: 'None',
+};
+
+const COMM_COLORS = 'bg-teal-100 text-teal-700 border-teal-200';
 
 export default function DraftsPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
 
-  const [tasks,        setTasks]        = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [editTask,     setEditTask]     = useState(null);
-  const [ibsLeads,     setIbsLeads]     = useState([]);
-  const [customers,    setCustomers]    = useState([]);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [tasks, setTasks]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [editTask, setEditTask] = useState(null);
+  const [ibsLeads, setIbsLeads] = useState([]);
+  const [customers, setCustomers] = useState([]);
 
+  // Fetch drafts
   const fetchDrafts = useCallback(async () => {
-    setLoading(true);
     try {
-      const { data } = await api.get('/tasks', { params: { is_draft: true } });
+      const { data } = await api.get('/tasks', {
+        params: { is_draft: true }
+      });
       setTasks(data);
     } catch {
       toast.error('Failed to load drafts');
@@ -46,147 +84,49 @@ export default function DraftsPage() {
     });
   }, []);
 
-  function onSaved() {
+  function onSaved(data) {
     setEditTask(null);
+    // Refetch drafts to ensure list is in sync with server
     fetchDrafts();
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F4F2] flex flex-col">
+    <div className="min-h-screen bg-surface">
 
-      {/* ════════════════════════════════════════
-          HEADER — matches List View style
-      ════════════════════════════════════════ */}
-      <header className="sticky top-0 z-30 bg-white border-b border-stone-200 shadow-sm flex-shrink-0">
-        <div className="px-4 py-3 flex items-center gap-3">
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
 
-          {/* Back button */}
+          {/* Go Back */}
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-lg hover:bg-stone-100 text-stone-400 transition-colors"
-            title="Go Back"
+            className="btn-ghost p-2"
           >
-            <ArrowLeft size={17} />
+            <ArrowLeft size={18} />
           </button>
 
-          {/* Logo mark */}
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0"
-            style={{ background: BRAND }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-            </svg>
-          </div>
-
-          {/* Brand + title */}
-          <div className="hidden sm:flex items-center gap-1.5">
-            <img src={idolizeLogo} alt="Idolize" className="h-5 w-auto opacity-50" />
-            <span
-              className="font-semibold text-stone-900 text-sm"
-              style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.02em' }}
-            >
-              IBS Actions
-            </span>
-          </div>
-
-          {/* Draft count badge */}
-          {tasks.length > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="px-2.5 py-0.5 text-xs font-bold text-white rounded-full"
-              style={{ background: BRAND }}
-            >
+          <div className="flex-1">
+            <h1 className="text-lg font-bold text-slate-900">Drafts</h1>
+            <p className="text-xs text-slate-400">
               {tasks.length} draft{tasks.length !== 1 ? 's' : ''}
-            </motion.span>
-          )}
-
-          <div className="flex-1" />
-
-          {/* Page label — right side */}
-          <span className="hidden sm:flex flex-col items-end">
-            <span className="text-xs font-bold text-stone-700">Drafts</span>
-            <span className="text-[10px] text-stone-400">
-              {tasks.length} draft{tasks.length !== 1 ? 's' : ''}
-            </span>
-          </span>
-
-          {/* Divider */}
-          <div className="hidden sm:block h-5 w-px bg-stone-200" />
-
-          {/* Refresh */}
-          <button
-            onClick={fetchDrafts}
-            className="p-2 rounded-lg hover:bg-stone-100 text-stone-400 transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw
-              size={15}
-              className={loading ? 'animate-spin' : ''}
-              style={{ color: loading ? BRAND : undefined }}
-            />
-          </button>
-
-          {/* User menu */}
-          <div className="relative">
-            <button
-              onClick={() => setUserMenuOpen(o => !o)}
-              className="flex items-center gap-2 px-2 py-1 rounded-full border border-stone-200 hover:border-stone-300 transition-colors"
-            >
-              <User size={17} strokeWidth={2} className="text-stone-500" />
-              <span className="hidden sm:block text-sm font-medium text-stone-600">{user?.name}</span>
-            </button>
-
-            <AnimatePresence>
-              {userMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-56 bg-white border border-stone-200 rounded-xl shadow-lg overflow-hidden z-50"
-                >
-                  <div className="px-4 py-3 border-b border-stone-100">
-                    <div className="text-sm font-semibold text-stone-800" style={{ fontFamily: 'Georgia, serif' }}>
-                      {user?.name}
-                    </div>
-                    <div className="text-xs text-stone-400 truncate">{user?.email}</div>
-                  </div>
-                  <button
-                    onClick={() => { logout(); navigate('/login'); }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium hover:bg-red-50 transition-colors"
-                    style={{ color: BRAND }}
-                  >
-                    <LogOut size={13} />
-                    Logout
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            </p>
           </div>
         </div>
-
-        {/* Crimson accent line */}
-        <div
-          className="h-[2px]"
-          style={{ background: `linear-gradient(90deg, ${BRAND} 0%, #DC2626 40%, transparent 100%)` }}
-        />
       </header>
 
       {/* ── Content ── */}
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+
         {loading ? (
           <div className="flex justify-center py-20">
-            <svg className="animate-spin w-7 h-7" fill="none" viewBox="0 0 24 24" style={{ color: BRAND }}>
+            <svg className="animate-spin w-6 h-6 text-blue-500" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
             </svg>
           </div>
         ) : tasks.length === 0 ? (
           <div className="text-center py-24">
-            <p className="text-stone-500 font-medium">No drafts found</p>
+            <p className="text-slate-500 font-medium">No drafts found</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -197,17 +137,58 @@ export default function DraftsPage() {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
+                  className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
                 >
                   <div className="flex items-start gap-3">
+
+                    {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-stone-800">{task.title}</p>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {task.title}
+                      </p>
+
+                      {/* Badges - Fields that are filled */}
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {task.priority !== null && (
+                          <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${PRIORITY_COLORS[task.priority]}`}>
+                            {PRIORITY_LABELS[task.priority]}
+                          </span>
+                        )}
+                        {task.function_type && (
+                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium whitespace-nowrap">
+                            {task.function_type}
+                          </span>
+                        )}
+                        {task.ibs_lead_name && (
+                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium truncate max-w-[100px] sm:max-w-none">
+                            {task.ibs_lead_name}
+                          </span>
+                        )}
+                        {task.customer_name && (
+                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium truncate max-w-[100px] sm:max-w-none">
+                            {task.customer_name}
+                          </span>
+                        )}
+                        {task.financial_impact && (
+                          <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${FINANCIAL_COLORS[task.financial_impact]}`}>
+                            {FINANCIAL_LABELS[task.financial_impact]}
+                          </span>
+                        )}
+                        {task.comm_mode && (
+                          <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${COMM_COLORS}`}>
+                            {COMM_LABELS[task.comm_mode]}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Missing fields - shown in red */}
                       {task.missing?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {task.missing.map((m, i) => (
                             <span
                               key={i}
-                              className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 font-medium"
+                              className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full 
+                                         bg-red-50 text-red-600 border border-red-200 font-medium"
                             >
                               <AlertTriangle size={10} />
                               {m}
@@ -216,20 +197,25 @@ export default function DraftsPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Edit */}
                     <button
                       onClick={() => setEditTask(task)}
-                      className="flex-shrink-0 text-stone-400 hover:text-red-700 transition-colors p-1 rounded-lg hover:bg-red-50"
+                      className="flex-shrink-0 text-slate-400 hover:text-blue-600 
+                                 transition-colors p-1 rounded-lg hover:bg-blue-50"
                     >
                       <SlidersHorizontal size={16} />
                     </button>
+
                   </div>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         )}
-      </main>
+      </div>
 
+      {/* Modal */}
       <AddModal
         open={!!editTask}
         onClose={() => setEditTask(null)}
