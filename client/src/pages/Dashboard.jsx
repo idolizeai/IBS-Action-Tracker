@@ -78,11 +78,15 @@ export default function Dashboard() {
 
   function handleTaskSaved() { setEditTask(null); fetchTasks(); }
 
-  function handleTaskUpdated(data) {
-    if (data.done) setTasks(ts => ts.filter(t => t.id !== data.id));
-    else           setTasks(ts => ts.map(t => t.id === data.id ? data : t));
-  }
 
+function handleTaskUpdated(data) {
+  if (data.done) {
+    setTasks(ts => ts.filter(t => t.id !== data.id));
+  } else {
+    setTasks(ts => ts.map(t => t.id === data.id ? data : t));
+    fetchTasks();
+  }
+}
   function handleTaskDeleted(id) { setTasks(ts => ts.filter(t => t.id !== id)); }
 
   function handleEdit(task) { setEditTask(task); setAddOpen(true); }
