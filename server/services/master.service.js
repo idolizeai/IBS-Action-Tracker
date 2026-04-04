@@ -4,14 +4,16 @@ const { IBSLead, Customer } = require('../models');
 const getIBSLeads = () =>
   IBSLead.findAll({ order: [['name', 'ASC']] });
 
-const createIBSLead = (name) =>
-  IBSLead.create({ name: name.trim() });
+const createIBSLead = (name, email) =>
+
+  IBSLead.create({ name: name.trim(), email: email.trim() });
 
 const updateIBSLead = async (id, updates) => {
   const lead = await IBSLead.findByPk(id);
   if (!lead) return null;
   const patch = {};
   if (updates.name !== undefined) patch.name = updates.name.trim();
+  if (updates.email !== undefined) patch.email = updates.email.trim();
   if (updates.active !== undefined) patch.active = Boolean(updates.active);
   if (Object.keys(patch).length === 0) {
     const err = new Error('Nothing to update');

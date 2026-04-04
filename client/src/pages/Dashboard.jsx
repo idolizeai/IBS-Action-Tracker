@@ -121,7 +121,7 @@ function handleTaskUpdated(data) {
 
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
-        <div className="px-4 py-3 flex items-center gap-3">
+        <div className="px-4 py-3 flex items-center gap-1 md:gap-3 lg:gap-5">
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 mr-1">

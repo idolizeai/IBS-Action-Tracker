@@ -7,6 +7,7 @@ import api from '../api/axios';
 function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [newInternal, setNewInternal] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -14,8 +15,13 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      await onAdd({ name: newName.trim(), is_internal: newInternal });
+      const payload = { name: newName.trim(), is_internal: newInternal };
+      if (title === 'IBS Leads' && newEmail.trim()) {
+        payload.email = newEmail.trim();
+      }
+      await onAdd(payload);
       setNewName('');
+      setNewEmail('');
       setNewInternal(false);
       setAdding(false);
     } catch (err) {
@@ -48,11 +54,11 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
             exit={{ opacity: 0, height: 0 }}
             className="mb-4 overflow-hidden"
           >
-            <div className="flex gap-2 items-end p-3 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="flex-1">
+            <div className="flex flex-col gap-2 p-3 bg-blue-50 rounded-xl border border-blue-200">
+              <div>
                 <input
                   type="text"
-                  className="input-field text-sm"
+                  className="input-field text-sm w-full"
                   placeholder="Enter name…"
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
@@ -60,18 +66,32 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
                   autoFocus
                 />
               </div>
+              {title === 'IBS Leads' && (
+                <div>
+                  <input
+                    type="email"
+                    className="input-field text-sm w-full"
+                    placeholder="Enter email…"
+                    value={newEmail}
+                    onChange={e => setNewEmail(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                  />
+                </div>
+              )}
               {title === 'Customers' && (
-                <label className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer whitespace-nowrap pb-3 font-medium">
+                <label className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer font-medium">
                   <input type="checkbox" checked={newInternal} onChange={e => setNewInternal(e.target.checked)} className="rounded" />
                   Internal
                 </label>
               )}
-              <button onClick={handleAdd} disabled={saving} className="btn-primary px-3 py-2.5">
-                {saving ? '…' : <Check size={14} />}
-              </button>
-              <button onClick={() => setAdding(false)} className="btn-ghost px-3 py-2.5">
-                <X size={14} />
-              </button>
+              <div className="flex gap-2 justify-end">
+                <button onClick={handleAdd} disabled={saving} className="btn-primary px-3 py-2.5">
+                  {saving ? '…' : <Check size={14} />}
+                </button>
+                <button onClick={() => setAdding(false)} className="btn-ghost px-3 py-2.5">
+                  <X size={14} />
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -159,8 +179,8 @@ function MasterItem({ item, onEdit, onDelete, showInternal }) {
 }
 
 export default function MasterManager({ ibsLeads, customers, onUpdate }) {
-  async function addLead({ name }) {
-    const { data } = await api.post('/masters/ibs-leads', { name });
+  async function addLead({ name, email }) {
+    const { data } = await api.post('/masters/ibs-leads', { name, email });
     onUpdate('leads', [...ibsLeads, data]);
     toast.success('Lead added');
   }
