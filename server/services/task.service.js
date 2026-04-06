@@ -1,5 +1,6 @@
 const { Op, literal } = require('sequelize');
 const { Task, IBSLead, Customer, User } = require('../models');
+const crypto = require('crypto');
 
 const TASK_INCLUDE = [
   { model: IBSLead, as: 'ibsLead', attributes: ['id', 'name'] },
@@ -11,14 +12,31 @@ const flattenTask = (task) => {
   const t = task.toJSON ? task.toJSON() : task;
   return {
     ...t,
+    title: t.title ? decryptTitle(t.title) : t.title,
     ibs_lead_name: t.ibsLead?.name ?? null,
     customer_name: t.customer?.name ?? null,
-    is_internal:   t.customer?.is_internal ?? null,
-    owner_name:    t.User?.name ?? null,
-    ibsLead:       undefined,
-    customer:      undefined,
-    User:          undefined,
+    is_internal: t.customer?.is_internal ?? null,
+    owner_name: t.User?.name ?? null,
+    ibsLead: undefined,
+    customer: undefined,
+    User: undefined,
   };
+};
+
+
+
+const ALGORITHM = 'aes-256-cbc';
+const KEY = Buffer.from((process.env.SECRET_KEY || '').padEnd(32).slice(0, 32));
+const IV = KEY.slice(0, 16); // fixed 16-byte IV derived from key
+
+const encryptTitle = (text) => {
+  const cipher = crypto.createCipheriv(ALGORITHM, KEY, IV);
+  return Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]).toString('base64');
+};
+
+const decryptTitle = (stored) => {
+  const decipher = crypto.createDecipheriv(ALGORITHM, KEY, IV);
+  return Buffer.concat([decipher.update(Buffer.from(stored, 'base64')), decipher.final()]).toString('utf8');
 };
 
 const getTasksForUser = async (user, filters = {}) => {
@@ -88,7 +106,7 @@ const createTask = async (userId, data) => {
   const { title, priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, is_draft } = data;
   const task = await Task.create({
     user_id: userId,
-    title: title.trim(),
+    title: encryptTitle(title.trim()),
     priority: priority != null ? Number(priority) : null,
     function_type: function_type || null,
     ibs_lead_id: ibs_lead_id ? Number(ibs_lead_id) : null,
@@ -121,7 +139,7 @@ const updateTask = async (taskId, user, updates) => {
   for (const field of allowed) {
     if (updates[field] === undefined) continue;
 
-    if (field === 'title') patch.title = updates.title.trim();
+    if (field === 'title') patch.title = encryptTitle(updates.title.trim());
     else if (field === 'priority') patch.priority = updates.priority != null ? Number(updates.priority) : null;
     else if (field === 'ibs_lead_id') patch.ibs_lead_id = updates.ibs_lead_id ? Number(updates.ibs_lead_id) : null;
     else if (field === 'customer_id') patch.customer_id = updates.customer_id ? Number(updates.customer_id) : null;

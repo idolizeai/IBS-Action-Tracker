@@ -15,13 +15,13 @@ const Task = sequelize.define(
       allowNull: false,
     },
     title: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT('long'),
       allowNull: false,
     },
 
     is_draft: {
-      type:DataTypes.BOOLEAN,
-      allowNull:false,
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
       defaultValue: false
     },
     priority: {
