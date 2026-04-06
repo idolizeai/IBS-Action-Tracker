@@ -27,6 +27,30 @@ const PRIO_DOT = {
   4: 'bg-slate-400',
 };
 
+// Matches the dashboard kanban card colors exactly
+const PRIO_CARD = {
+  0: {
+    card: 'border-red-200 border-l-red-500 bg-gradient-to-br from-red-50/60 to-white',
+    badge: 'bg-red-100 text-red-700 border-red-200',
+  },
+  1: {
+    card: 'border-orange-200 border-l-orange-500 bg-gradient-to-br from-orange-50/60 to-white',
+    badge: 'bg-orange-100 text-orange-700 border-orange-200',
+  },
+  2: {
+    card: 'border-amber-200 border-l-amber-400 bg-gradient-to-br from-amber-50/60 to-white',
+    badge: 'bg-amber-100 text-amber-700 border-amber-200',
+  },
+  3: {
+    card: 'border-blue-200 border-l-blue-500 bg-gradient-to-br from-blue-50/60 to-white',
+    badge: 'bg-blue-100 text-blue-700 border-blue-200',
+  },
+  4: {
+    card: 'border-slate-200 border-l-slate-400 bg-gradient-to-br from-slate-50/40 to-white',
+    badge: 'bg-slate-100 text-slate-600 border-slate-200',
+  },
+};
+
 function relativeTime(dateStr) {
   if (!dateStr) return '';
   const now = new Date();
@@ -222,53 +246,58 @@ export default function ListView() {
 
                 <div className="space-y-2">
                   <AnimatePresence>
-                    {group.tasks.map(task => (
-                      <motion.div
-                        key={task.id}
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 6 }}
-                        className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
-                      >
-                        <div className="flex items-start gap-3">
-                          {/* Done toggle */}
-                          <button
-                            onClick={() => toggleDone(task)}
-                            className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center transition-all shadow-sm hover:bg-green-600"
-                          >
-                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
-                              <polyline points="2,6 5,9 10,3" />
-                            </svg>
-                          </button>
+                    {group.tasks.map(task => {
+                      const prio = task.priority ?? 4;
+                      const { card: cardCls } = PRIO_CARD[prio];
+                      return (
+                        <motion.div
+                          key={task.id}
+                          initial={{ opacity: 0, x: -6 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 6 }}
+                          className={`border rounded-xl border-l-4 p-4 shadow-sm opacity-60 ${cardCls}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Done toggle */}
+                            <button
+                              onClick={() => toggleDone(task)}
+                              className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center transition-all shadow-sm hover:bg-green-600"
+                            >
+                              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
+                                <polyline points="2,6 5,9 10,3" />
+                              </svg>
+                            </button>
 
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold leading-snug line-through text-slate-400 break-words min-w-0">
-                              {task.title}
-                            </p>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold leading-snug line-through text-slate-400 break-words min-w-0">
+                                {task.title}
+                              </p>
 
-                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                              {/* Priority dot + label */}
-                              <span className="flex items-center gap-1 text-xs text-slate-400">
-                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIO_DOT[task.priority]}`} />
-                                {PRIO_LABEL[task.priority]?.split(' · ')[0]}
-                              </span>
-                              <span className="text-slate-300">·</span>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-medium">
-                                {task.function_type}
-                              </span>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-100 font-medium">
-                                {task.customer_name}
-                              </span>
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                {/* Priority dot + label */}
+                                <span className="flex items-center gap-1 text-xs text-slate-400">
+                                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIO_DOT[task.priority]}`} />
+                                  {PRIO_LABEL[task.priority]?.split(' · ')[0]}
+                                </span>
+                                <span className="text-slate-300">·</span>
+                                
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-medium">
+                                  {task.function_type}
+                                </span>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-100 font-medium">
+                                  {task.customer_name}
+                                </span>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Relative time */}
-                          <span className="flex-shrink-0 text-xs text-slate-400 font-medium whitespace-nowrap mt-0.5">
-                            {relativeTime(task.done_at)}
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
+                            {/* Relative time */}
+                            <span className="flex-shrink-0 text-xs text-slate-400 font-medium whitespace-nowrap mt-0.5">
+                              {relativeTime(task.done_at)}
+                            </span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </AnimatePresence>
                 </div>
               </div>
@@ -306,6 +335,13 @@ export default function ListView() {
                     <AnimatePresence>
                       {byPriority[p].map(task => {
                         const isCollaboratorTask = user && task.user_id !== user.id;
+                        const { card: cardCls, badge: badgeCls } = PRIO_CARD[p];
+                        const cardClassName = isCollaboratorTask
+                          ? 'border-indigo-600 border-l-indigo-600 bg-gradient-to-br from-white to-indigo-50/30'
+                          : cardCls;
+                        const badgeClassName = isCollaboratorTask
+                          ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                          : 'bg-slate-200';
                         return (
                           <motion.div
                             key={task.id}
@@ -315,36 +351,52 @@ export default function ListView() {
                             draggable
                             onDragStart={e => handleDragStart(e, task)}
                             onDragEnd={handleDragEnd}
-                            className={`bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${draggedTask?.id === task.id ? 'opacity-40 scale-95' : ''
-                              } ${isCollaboratorTask ? 'border-slate-800 bg-slate-50/50 shadow-inner' : 'border-slate-200'}`}
+                            className={`border rounded-xl border-l-4 p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing
+                              ${draggedTask?.id === task.id ? 'opacity-40 scale-95' : ''}
+                              ${cardClassName}
+                            `}
                           >
                             <div className="flex items-start gap-3">
                               <button
                                 onClick={() => toggleDone(task)}
-                                className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 border-slate-300 hover:border-green-400 bg-white flex items-center justify-center transition-all shadow-sm"
+                                className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
+                                  isCollaboratorTask 
+                                    ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
+                                    : 'border-slate-300 hover:border-green-400 bg-white'
+                                }`}
                               />
 
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold leading-snug text-slate-800 break-words min-w-0">
-                                  {task.title}
-                                </p>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <p className="text-sm font-semibold leading-snug text-slate-800 break-words min-w-0">
+                                    {task.title}
+                                  </p>
+                                  {/* ASSIGNED badge — purple pill, same as dashboard kanban */}
+                                  {isCollaboratorTask && (
+                                    <span className="flex-shrink-0 text-[9px] font-black tracking-widest px-1.5 py-0.5 rounded bg-indigo-600 text-white uppercase shadow-sm">
+                                      Assigned
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* FROM: owner line */}
                                 {isCollaboratorTask && (
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <User size={10} className="text-slate-500" />
-                                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                                      Owner: {task.owner_name}
+                                  <div className="flex items-center gap-1 mb-1">
+                                    <User size={10} className="text-indigo-600" />
+                                    <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-tighter">
+                                      From: {task.owner_name}
                                     </span>
                                   </div>
                                 )}
 
-                                <div className="flex flex-wrap gap-1.5 mt-2">
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium">
+                                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                  <span className="text-xs  px-2 py-0.5  rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium">
                                     {task.function_type}
                                   </span>
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeClassName}`}>
                                     {task.ibs_lead_name}
                                   </span>
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 border border-teal-200 font-medium">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeClassName}`}>
                                     {task.customer_name}
                                   </span>
                                   {task.financial_impact !== 'none' && (
@@ -352,7 +404,7 @@ export default function ListView() {
                                       {FINANCIAL_LABELS[task.financial_impact]}
                                     </span>
                                   )}
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                  <span className="text-xs px-2 py-0.5 bg-teal-100 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
                                     {COMM_LABELS[task.comm_mode]}
                                   </span>
                                 </div>

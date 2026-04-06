@@ -37,7 +37,7 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
           <Icon size={16} className="text-slate-500" />
           <h3 className="font-bold text-slate-800">{title}</h3>
           <span className="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded-full">
-            {items.length}
+            {items.filter(item => item.active).length}
           </span>
         </div>
         <button onClick={() => setAdding(a => !a)} className="btn-ghost flex items-center gap-1 text-sm font-semibold">
@@ -93,10 +93,10 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
       </AnimatePresence>
 
       <div className="space-y-1">
-        {items.map(item => (
+        {items.filter(item => item.active).map(item => (
           <MasterItem key={item.id} item={item} onEdit={onEdit} onDelete={onDelete} showInternal={title === 'Customers'} />
         ))}
-        {items.length === 0 && (
+        {items.filter(item => item.active).length === 0 && (
           <p className="text-sm text-slate-400 text-center py-6">No entries yet</p>
         )}
       </div>

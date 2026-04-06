@@ -165,7 +165,7 @@ export default function FilterBar({ active, onChange, ibsLeads, customers }) {
 
       {/* Financial */}
       <Dropdown
-        label="Financial"
+        label="Fin Impact"
         value={active.financial_impact}
         onChange={(v) => update("financial_impact", v)}
         activeClass="bg-orange-600 text-white border-orange-600"
