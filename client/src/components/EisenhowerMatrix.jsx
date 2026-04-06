@@ -14,7 +14,7 @@ const QUADRANTS = [
   {
     id: 'q1',
     num: 'P0',
-    label: 'DO NOW',
+    label: 'Do Now',
     sublabel: 'Urgent · Important',
     action: 'ACT NOW',
     prios: [0],
@@ -29,9 +29,9 @@ const QUADRANTS = [
   {
     id: 'q2',
     num: 'P1',
-    label: 'DO TODAY/TOMORROW',
+    label: 'Do Today / Tomorrow',
     sublabel: 'Important · Less Urgent',
-    action: 'TODAY/TOM',
+    action: 'TODAY',
     prios: [1],
     headerGrad: 'from-orange-500 to-orange-600',
     bg: 'bg-orange-50',
@@ -44,7 +44,7 @@ const QUADRANTS = [
   {
     id: 'q3',
     num: 'P2',
-    label: 'Do This Week',
+    label: 'Schedule This Week',
     sublabel: 'Important · Not Urgent',
     action: 'PLAN IT',
     prios: [2],
@@ -59,7 +59,7 @@ const QUADRANTS = [
   {
     id: 'q4',
     num: 'P3',
-    label: 'WEEKEND',
+    label: 'Delegate / Weekend',
     sublabel: 'Urgent · Not Important',
     action: 'HAND OFF',
     prios: [3],
@@ -74,16 +74,16 @@ const QUADRANTS = [
 ];
 
 const PRIO_BADGE = {
-  0: { label: 'P0 · Now', cls: 'bg-red-600    text-white' },
+  0: { label: 'P0 · Now',   cls: 'bg-red-600    text-white' },
   1: { label: 'P1 · Today', cls: 'bg-orange-500 text-white' },
-  2: { label: 'P2 · Week', cls: 'bg-blue-600   text-white' },
+  2: { label: 'P2 · Week',  cls: 'bg-blue-600   text-white' },
   3: { label: 'P3 · Wknd', cls: 'bg-amber-500  text-white' },
-  4: { label: 'P4 · TBD', cls: 'bg-slate-500  text-white' },
+  4: { label: 'P4 · TBD',  cls: 'bg-slate-500  text-white' },
 };
 
 const cardVariants = {
   hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.18 } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.18 } },
 };
 
 function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit, quadrantIndex, draggedTask, dragOverQuad, onDragStart, onDragEnd, onDragOver, onDragEnter, onDragLeave, onDrop }) {
@@ -96,27 +96,30 @@ function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit, quadrantIndex, d
       onDragEnter={() => onDragEnter(quadrantIndex)}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, quadrantIndex)}
-      className={`flex flex-col rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden transition-all duration-200 ${isOverQuad && draggedTask ? 'shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105' : ''
-        }`}
+      // ✅ FIX 1: Added `min-w-0` to prevent grid cell from growing beyond its column width
+      className={`flex flex-col rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden transition-all duration-200 min-w-0 ${
+        isOverQuad && draggedTask ? 'shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105' : ''
+      }`}
       style={{ minHeight: 260 }}
     >
       {/* Header */}
       <div className={`bg-gradient-to-br ${q.headerGrad} px-4 py-3 flex-shrink-0`}>
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl font-black text-white/30 leading-none select-none">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-2xl font-black text-white/30 leading-none select-none flex-shrink-0">
               {q.num}
             </span>
-            <div>
-              <p className="text-white font-bold text-sm leading-tight">{q.label}</p>
-              <p className="text-white/70 text-[11px] font-medium mt-0.5">{q.sublabel}</p>
+            {/* ✅ FIX 2: Added `min-w-0` so header text truncates instead of overflowing */}
+            <div className="min-w-0">
+              <p className="text-white font-bold text-sm leading-tight truncate">{q.label}</p>
+              <p className="text-white/70 text-[11px] font-medium mt-0.5 truncate">{q.sublabel}</p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-            <span className={`text-[10px] font-black tracking-widest px-2 py-0.5 rounded-full bg-white/20 text-white`}>
+            <span className="text-[10px] font-black tracking-widest px-2 py-0.5 rounded-full bg-white/20 text-white">
               {q.action}
             </span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full bg-white/25 text-white`}>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">
               {tasks.length} task{tasks.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -124,7 +127,8 @@ function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit, quadrantIndex, d
       </div>
 
       {/* Tasks */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      {/* ✅ FIX 3: maxHeight + overflow-y-auto forces scrollbar when tasks overflow */}
+      <div className="overflow-y-auto overflow-x-hidden p-3 space-y-2" style={{ maxHeight: '320px' }}>
         <AnimatePresence>
           {tasks.length === 0 && !dragOverQuad ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -138,8 +142,12 @@ function QuadrantCell({ q, tasks, onUpdated, onDeleted, onEdit, quadrantIndex, d
                 draggable
                 onDragStart={(e) => onDragStart(e, task)}
                 onDragEnd={onDragEnd}
-                className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 ${draggedTask?.id === task.id ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
-                  }`}
+                // ✅ FIX 4: Added `min-w-0 w-full` so each task card stays within bounds
+                className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 min-w-0 w-full ${
+                  draggedTask?.id === task.id ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+                }`}
+                // ✅ FIX 8: Force long unbroken strings to wrap instead of overflowing
+                style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
               >
                 {showPrioBadge && (
                   <div className="flex justify-end mb-1">
@@ -208,7 +216,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
       onUpdated(data);
       toast.success(`Moved to ${destQuadrant.label}`);
     } catch (e) {
-      toast.error(e.response.data.error || 'Failed to update priority');
+      toast.error('Failed to update priority');
       console.error(e);
     } finally {
       setDraggedTask(null);
@@ -235,7 +243,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-300" />
               <span className="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase text-slate-500 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-slate-400" />
-                Urgent
+                Less Urgent
               </span>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-300" />
             </div>
@@ -254,12 +262,13 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
             <div className="flex-1 flex items-center justify-center" style={{ minHeight: 260 }}>
               <div className="flex items-center gap-1.5 -rotate-90 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
-                <span className="text-xs font-black tracking-widest uppercase text-slate-500">Medium Priority</span>
+                <span className="text-xs font-black tracking-widest uppercase text-slate-500">Lower Priority</span>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4">
+          {/* ✅ FIX 5: Added `min-w-0` to the grid wrapper so columns respect their fr boundaries */}
+          <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-w-0">
             {QUADRANTS.map((q, idx) => (
               <QuadrantCell
                 key={q.id}
@@ -306,14 +315,14 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
           return (
             <div key={q.id} className={`rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden`}>
               <div className={`bg-gradient-to-br ${q.headerGrad} px-4 py-3 flex items-center justify-between`}>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-lg font-black text-white/30">{q.num}</span>
-                  <div>
-                    <p className="text-white font-bold text-sm">{q.label}</p>
-                    <p className="text-white/70 text-[11px]">{q.sublabel}</p>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-lg font-black text-white/30 flex-shrink-0">{q.num}</span>
+                  <div className="min-w-0">
+                    <p className="text-white font-bold text-sm truncate">{q.label}</p>
+                    <p className="text-white/70 text-[11px] truncate">{q.sublabel}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-[10px] font-black tracking-widest bg-white/20 text-white px-2 py-0.5 rounded-full">
                     {q.action}
                   </span>
@@ -323,9 +332,11 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
                 </div>
               </div>
               {qtasks.length > 0 ? (
-                <div className="p-3 space-y-2">
+                // ✅ FIX 6: overflow-x-hidden on mobile task list too
+                <div className="overflow-y-auto overflow-x-hidden p-3 space-y-2" style={{ maxHeight: '320px' }}>
                   {qtasks.map(task => (
-                    <div key={task.id}>
+                    // ✅ FIX 7: min-w-0 w-full on each mobile task wrapper
+                    <div key={task.id} className="min-w-0 w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                       {q.prios.length > 1 && (
                         <div className="flex justify-end mb-1">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${PRIO_BADGE[task.priority].cls}`}>
