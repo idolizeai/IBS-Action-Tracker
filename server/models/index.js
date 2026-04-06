@@ -4,6 +4,7 @@ const Task = require('./Task');
 const IBSLead = require('./IBSLead');
 const Customer = require('./Customer');
 const TaskDraft = require('./TaskDraft');
+const RefreshToken = require('./RefreshToken');
 
 // Associations
 User.hasMany(Task, { foreignKey: 'user_id', onDelete: 'CASCADE' });
@@ -18,4 +19,7 @@ IBSLead.hasMany(Task, { foreignKey: 'ibs_lead_id' });
 Task.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
 Customer.hasMany(Task, { foreignKey: 'customer_id' });
 
-module.exports = { sequelize, User, Task, IBSLead, Customer, TaskDraft };
+User.hasMany(RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+RefreshToken.belongsTo(User, { foreignKey: 'user_id' });
+
+module.exports = { sequelize, User, Task, IBSLead, Customer, TaskDraft, RefreshToken };

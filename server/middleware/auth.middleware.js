@@ -3,11 +3,10 @@ const { IBSLead } = require('../models');
 const { error } = require('../utils/response');
 
 function authMiddleware(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
+  const token = req.cookies?.access_token;
+  if (!token) {
     return res.status(401).json({ success: false, error: 'No token provided' });
   }
-  const token = header.split(' ')[1];
   try {
     req.user = jwt.verify(token, process.env.JWT_SECRET);
     next();

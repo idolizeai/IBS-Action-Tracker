@@ -298,7 +298,7 @@ export default function Dashboard() {
                     <div className="text-xs text-slate-500 truncate">{user?.email}</div>
                   </div>
                   <button
-                    onClick={() => { logout(); navigate('/login'); }}
+                    onClick={async () => { await logout(); navigate('/login'); }}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium"
                   >
                     <LogOut size={14} />

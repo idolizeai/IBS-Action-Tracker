@@ -5,12 +5,11 @@ const { PRIORITIES, FINANCIAL_IMPACT, COMM_MODES, FUNCTION_TYPES } = require('..
 const validateTaskBody = (body) => {
   const { title, priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, is_draft } = body;
   if (!title || title.trim().length === 0) return 'title is required';
- 
-  console.log('Validating task body:', is_draft , body); 
+
   if (is_draft) {
     return null; // skip validation for drafts
   }
- console.log('Validating non-draft task body:', body);
+
   if (!PRIORITIES.includes(Number(priority))) return 'invalid priority';
   if (!FUNCTION_TYPES.includes(function_type)) return 'invalid function_type';
   if (!ibs_lead_id) return 'ibs_lead_id is required';

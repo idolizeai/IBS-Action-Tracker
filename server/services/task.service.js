@@ -86,7 +86,6 @@ const getTasksForUser = async (user, filters = {}) => {
 
 const createTask = async (userId, data) => {
   const { title, priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, is_draft } = data;
-console.log('Creating task with data:', data);
   const task = await Task.create({
     user_id: userId,
     title: title.trim(),

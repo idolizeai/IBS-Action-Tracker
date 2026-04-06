@@ -1,29 +1,42 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api' });
-
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+const api = axios.create({
+  baseURL: '/api',
+  withCredentials: true, // send cookies automatically on every request
 });
 
+// Unwrap { success: true, data: ... } envelope
 api.interceptors.response.use(
-  r => {
-    // Unwrap { success: true, data: ... } envelope so callers get raw data
+  (r) => {
     if (r.data && r.data.success === true && 'data' in r.data) {
       r.data = r.data.data;
     }
     return r;
   },
-  err => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+  async (err) => {
+    const original = err.config;
+
+    // If 401 and not already a retry, and not the refresh/login endpoint itself
+    if (
+      err.response?.status === 401 &&
+      !original._retry &&
+      !original.url.includes('/auth/refresh') &&
+      !original.url.includes('/auth/login')
+    ) {
+      original._retry = true;
+      try {
+        // Try to get a new access token silently using the refresh cookie
+        await api.post('/auth/refresh');
+        // Retry the original failed request — new access_token cookie is now set
+        return api(original);
+      } catch {
+        // Refresh failed — session is fully expired, send to login
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
+
     return Promise.reject(err);
   }
 );

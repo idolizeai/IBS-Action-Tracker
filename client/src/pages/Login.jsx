@@ -9,7 +9,7 @@ export default function Login() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'user' });
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -22,11 +22,10 @@ export default function Login() {
       if (mode === 'login') {
         await login(form.email, form.password);
       } else {
-        await register(form.name, form.email, form.password, form.role);
+        await register(form.name, form.email, form.password);
       }
       navigate('/dashboard');
     } catch (err) {
-      console.log("err ", err);
       toast.error(err.response?.data?.message || err.response?.data?.error || 'Something went wrong');
     } finally {
       setLoading(false);
@@ -139,22 +138,6 @@ export default function Login() {
               </button>
             </div>
           </div>
-
-          {mode === 'register' && (
-            <div>
-              <label className="block text-xs text-slate-500 mb-1.5 font-semibold uppercase tracking-wider">
-                Role
-              </label>
-              <select
-                className="input-field"
-                value={form.role}
-                onChange={e => set('role', e.target.value)}
-              >
-                <option value="user">User</option>
-                <option value="admin">Admin (can manage masters)</option>
-              </select>
-            </div>
-          )}
 
           <button
             type="submit"
