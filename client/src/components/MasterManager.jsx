@@ -99,7 +99,7 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
 
       <div className="space-y-1">
         {items.map(item => (
-          <MasterItem key={item.id} item={item} onEdit={onEdit} onDelete={onDelete} showInternal={title === 'Customers'} />
+          <MasterItem key={item.id} item={item} onEdit={onEdit} onDelete={onDelete} showInternal={title === 'Customers'} showEmail={title === 'IBS Leads'} />
         ))}
         {items.length === 0 && (
           <p className="text-sm text-slate-400 text-center py-6">No entries yet</p>
@@ -109,16 +109,18 @@ function MasterSection({ title, icon: Icon, items, onAdd, onEdit, onDelete }) {
   );
 }
 
-function MasterItem({ item, onEdit, onDelete, showInternal }) {
+function MasterItem({ item, onEdit, onDelete, showInternal, showEmail }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(item.name);
+  const [email, setEmail] = useState(item.email || '');
   const [isInternal, setIsInternal] = useState(item.is_internal);
   const [saving, setSaving] = useState(false);
 
   async function save() {
     setSaving(true);
     try {
-      await onEdit(item.id, { name: name.trim(), ...(showInternal ? { is_internal: isInternal } : {}) });
+      const payload = { name: name.trim(), ...(showInternal ? { is_internal: isInternal } : {}), ...(showEmail ? { email: email.trim() } : {}) };
+      await onEdit(item.id, payload);
       setEditing(false);
     } catch {
       toast.error('Failed to update');
@@ -130,32 +132,49 @@ function MasterItem({ item, onEdit, onDelete, showInternal }) {
   return (
     <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 group border border-transparent hover:border-slate-200 transition-all">
       {editing ? (
-        <>
+        <div className="flex flex-col gap-2 w-full">
           <input
-            className="flex-1 bg-white text-sm text-slate-800 outline-none border-b-2 border-blue-500 pb-0.5"
+            className="bg-white text-sm text-slate-800 outline-none border-b-2 border-blue-500 pb-0.5"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && save()}
             autoFocus
           />
+          {showEmail && (
+            <input
+              type="email"
+              className="bg-white text-sm text-slate-800 outline-none border-b-2 border-blue-500 pb-0.5"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Email"
+              onKeyDown={e => e.key === 'Enter' && save()}
+            />
+          )}
           {showInternal && (
             <label className="flex items-center gap-1 text-xs text-slate-600 cursor-pointer font-medium">
               <input type="checkbox" checked={isInternal} onChange={e => setIsInternal(e.target.checked)} />
               Int.
             </label>
           )}
-          <button onClick={save} disabled={saving} className="text-green-600 hover:text-green-700 p-1">
-            <Check size={13} />
-          </button>
-          <button onClick={() => { setEditing(false); setName(item.name); }} className="text-slate-400 hover:text-slate-600 p-1">
-            <X size={13} />
-          </button>
-        </>
+          <div className="flex gap-1 justify-end">
+            <button onClick={save} disabled={saving} className="text-green-600 hover:text-green-700 p-1">
+              <Check size={13} />
+            </button>
+            <button onClick={() => { setEditing(false); setName(item.name); setEmail(item.email || ''); }} className="text-slate-400 hover:text-slate-600 p-1">
+              <X size={13} />
+            </button>
+          </div>
+        </div>
       ) : (
         <>
-          <span className={`flex-1 text-sm font-medium ${item.active ? 'text-slate-700' : 'text-slate-400 line-through'}`}>
-            {item.name}
-          </span>
+          <div className="flex-1">
+            <span className={`text-sm font-medium ${item.active ? 'text-slate-700' : 'text-slate-400 line-through'}`}>
+              {item.name}
+            </span>
+            {showEmail && item.email && (
+              <div className="text-xs text-slate-500 mt-0.5">{item.email}</div>
+            )}
+          </div>
           {showInternal && item.is_internal && (
             <span className="text-xs text-teal-700 border border-teal-300 bg-teal-50 px-2 py-0.5 rounded-full font-semibold">
               Internal

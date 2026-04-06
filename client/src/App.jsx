@@ -47,7 +47,7 @@ export default function App() {
       </BrowserRouter>
 
       {/* General toasts — top-center */}
-      <Toaster
+      {/* <Toaster
         position="top-center"
         toastOptions={{
           style: {
@@ -62,7 +62,7 @@ export default function App() {
           success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
           error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
         }}
-      />
+      /> */}
 
       {/* ⏰ Task reminder notifications — bottom-right (separate Toaster instance) */}
       <Toaster
