@@ -11,7 +11,7 @@ import FilterBar from '../components/FilterBar';
 import AddModal from '../components/AddModal';
 import MasterManager from '../components/MasterManager';
 import { useNotification } from '../hooks/useNotification.jsx';
-import idolizeLogo from '../assets/idolize-logo.jpg';
+import idolizeLogo from '../assets/logo.png';
 
 const BRAND = '#B91C1C';
 
@@ -121,15 +121,18 @@ export default function Dashboard() {
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 mr-1">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
+            {/* <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 11l3 3L22 4" />
                 <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
               </svg>
-            </div>
-            <div className="hidden sm:flex items-center gap-1.5">
-              <img src={idolizeLogo} alt="Idolize" className="h-5 w-auto opacity-50" />
+            </div> */}
+            <div className="hidden sm:flex  gap-1.5">
+              <img src={idolizeLogo} alt="Idolize" className="h-5 w-auto opacity-50 opacity-100 hidden md:block" />
               <span className="font-bold text-slate-900 text-sm  hidden sm:block">IBS Actions</span>
+            </div>
+            <div className="md:hidden block sm:flex  gap-1.5">
+              <span className="font-bold text-slate-900 text-sm   sm:block">IBS</span>
             </div>
           </div>
 

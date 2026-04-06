@@ -216,7 +216,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
       onUpdated(data);
       toast.success(`Moved to ${destQuadrant.label}`);
     } catch (e) {
-      toast.error('Failed to update priority');
+      toast.error(e?.response?.data?.error || 'Failed to update priority');
       console.error(e);
     } finally {
       setDraggedTask(null);

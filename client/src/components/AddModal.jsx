@@ -345,7 +345,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                       {saving
                         ? 'Saving…'
                         : isComplete
-                          ? (editTask ? 'Update Task' : 'Save Task')
+                          ? (editTask ? 'Update & Save' : 'Save Task')
                           : `${7 - filledCount} field${7 - filledCount !== 1 ? 's' : ''} remaining`}
                     </button>
                   </div>
