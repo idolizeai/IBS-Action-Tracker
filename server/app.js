@@ -17,20 +17,18 @@ const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
 
+// Trust IIS proxy headers (required for rate limiting, IP detection, and X-Forwarded-For)
+app.set('trust proxy', true);
+
 // Security headers: X-Frame-Options, X-Content-Type-Options, HSTS, etc.
 app.use(helmet());
 
-<<<<<<< HEAD
 const allowedOrigins = process.env.CLIENT_ORIGIN
   ? process.env.CLIENT_ORIGIN.split(',')
   : ['http://localhost:5173', 'http://localhost:5174'];
 
 app.use(cors({
   origin: allowedOrigins,
-=======
-app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
->>>>>>> 25cd64f90a730b43cd747e13845932684e835196
   credentials: true,
 }));
 app.use(cookieParser());

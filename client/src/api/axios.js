@@ -16,12 +16,14 @@ api.interceptors.response.use(
   async (err) => {
     const original = err.config;
 
-    // If 401 and not already a retry, and not the refresh/login endpoint itself
+    // If 401 and not already a retry, and not an auth endpoint
+    // We exclude /auth/me because AuthContext handles its 401s gracefully
     if (
       err.response?.status === 401 &&
       !original._retry &&
       !original.url.includes('/auth/refresh') &&
-      !original.url.includes('/auth/login')
+      !original.url.includes('/auth/login') &&
+      !original.url.includes('/auth/me')
     ) {
       original._retry = true;
       try {
@@ -31,6 +33,7 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         // Refresh failed — session is fully expired, send to login
+        // Only redirect if we are not already on the login page
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }

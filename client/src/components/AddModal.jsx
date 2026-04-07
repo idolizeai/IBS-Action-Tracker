@@ -113,8 +113,16 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
   const handleSpeechResult = useCallback(text => {
     setForm(f => ({ ...f, title: (f.title ? f.title + ' ' : '') + text }));
   }, []);
-  
+
   const { listening, toggle: toggleMic, supported: micSupported, interimTranscript } = useSpeech(handleSpeechResult);
+
+  // Auto-stop microphone when modal closes
+  useEffect(() => {
+    if (!open && listening) {
+      console.log('🛑 Modal closed — stopping microphone');
+      toggleMic(); // Call toggle to stop listening
+    }
+  }, [open, listening, toggleMic]);
 
   const isComplete = form.priority !== null &&
     form.function_type && form.ibs_lead_id && form.customer_id &&
@@ -212,7 +220,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 flex-shrink-0">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
-                    {editTask ? (isCollaboratorTask ? 'View Task' : 'Edit Task') : 'New Action Item'}
+                    {editTask ? (isCollaboratorTask ? 'View Task' : 'Edit Task') : 'New Action Items'}
                   </h2>
                   {!isCollaboratorTask && (
                     <p className="text-xs text-slate-400 mt-0.5">
