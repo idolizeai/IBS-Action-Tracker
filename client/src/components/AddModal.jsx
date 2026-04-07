@@ -113,30 +113,8 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
   const handleSpeechResult = useCallback(text => {
     setForm(f => ({ ...f, title: (f.title ? f.title + ' ' : '') + text }));
   }, []);
-
-  const { 
-    listening, 
-    toggle: toggleMic, 
-    supported: micSupported, 
-    interimTranscript, 
-    error: micError,
-    isStarting 
-  } = useSpeech(handleSpeechResult);
-
-  // Show error toast immediately when it occurs
-  useEffect(() => {
-    if (micError) {
-      toast.error(micError, { 
-        duration: 6000, 
-        icon: '🎤',
-        style: {
-          background: '#fef2f2',
-          color: '#dc2626',
-          border: '1px solid #fecaca',
-        }
-      });
-    }
-  }, [micError]);
+  
+  const { listening, toggle: toggleMic, supported: micSupported, interimTranscript } = useSpeech(handleSpeechResult);
 
   const isComplete = form.priority !== null &&
     form.function_type && form.ibs_lead_id && form.customer_id &&
@@ -288,13 +266,11 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                         className={`absolute right-3 top-3 p-1.5 rounded-lg transition-all duration-150 ${
                           listening
                             ? 'bg-red-500 text-white animate-pulse'
-                            : micError
-                              ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
-                              : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                            : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
                         }`}
-                        title={listening ? 'Stop recording' : micError ? 'Error - click to retry' : 'Speak to type'}
+                        title={listening ? 'Stop recording' : 'Speak to type'}
                       >
-                        {listening ? <MicOff size={16} /> : micError ? <Mic size={16} className="animate-bounce" /> : <Mic size={16} />}
+                        {listening ? <MicOff size={16} /> : <Mic size={16} />}
                       </button>
                     )}
                   </div>

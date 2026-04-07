@@ -168,10 +168,11 @@ export default function ListView() {
     }
     try {
       const { data } = await api.patch(`/tasks/${draggedTask.id}`, { priority: newPriority });
-      setTasks(ts => ts.map(t => t.id === data.id ? data : t));
+      setTasks(ts => ts.map(t => t.id === data.id ? { ...t, ...data } : t));
       toast.success(`Moved to ${PRIO_LABEL[newPriority]}`);
+      fetchTasks();
     } catch (e) {
-      toast.error(e.response.data.error || 'Failed to update priority');
+      toast.error(e.response?.data?.error || 'Failed to update priority');
     } finally {
       setDraggedTask(null);
     }
