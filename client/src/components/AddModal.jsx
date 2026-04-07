@@ -114,7 +114,14 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
     setForm(f => ({ ...f, title: (f.title ? f.title + ' ' : '') + text }));
   }, []);
 
-  const { listening, toggle: toggleMic, supported: micSupported, interimTranscript } = useSpeech(handleSpeechResult);
+  const { listening, toggle: toggleMic, supported: micSupported, interimTranscript, error: speechError } = useSpeech(handleSpeechResult);
+
+  // Show error if speech recognition fails
+  useEffect(() => {
+    if (speechError) {
+      toast.error(speechError);
+    }
+  }, [speechError]);
 
   // Auto-stop microphone when modal closes
   useEffect(() => {
