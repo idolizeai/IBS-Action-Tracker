@@ -1,2 +1,0 @@
-Connected to SQL Server
-Server running on http://localhost:\\.\pipe\d08fefb0-d75b-4942-a8a4-2907ce8d6475

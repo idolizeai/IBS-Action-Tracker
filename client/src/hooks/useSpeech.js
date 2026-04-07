@@ -29,6 +29,13 @@ export function useSpeech(onResult) {
     });
   }, [listening, isStarting, error, interimTranscript, finalTranscript, browserSupportsSpeechRecognition]);
 
+  // SAFETY: Ensure speech recognition is stopped on mount (prevents auto-start)
+  useEffect(() => {
+    console.log('🛑 Mounting speech hook - ensuring mic is OFF');
+    SpeechRecognition.stopListening().catch(() => {});
+    resetTranscript();
+  }, [resetTranscript]);
+
   // When speech recognition produces a final result, pass it to the parent
   useEffect(() => {
     if (!finalTranscript) return;
@@ -39,17 +46,25 @@ export function useSpeech(onResult) {
 
   // Auto-restart ONLY if user previously started it AND didn't manually stop
   useEffect(() => {
-    // Don't auto-start on page load - only restart if user had previously started
-    if (!userInitiatedRef.current) return;
-    
+    // SAFETY GUARD: Don't auto-start on page load - only restart if user had previously started
+    if (!userInitiatedRef.current) {
+      return;
+    }
+
     // If user manually stopped, don't restart
-    if (manualStopRef.current) return;
-    
+    if (manualStopRef.current) {
+      return;
+    }
+
     // If already starting or already listening, don't restart
-    if (isStarting || listening) return;
-    
+    if (isStarting || listening) {
+      return;
+    }
+
     // If browser doesn't support it, don't restart
-    if (!browserSupportsSpeechRecognition) return;
+    if (!browserSupportsSpeechRecognition) {
+      return;
+    }
 
     console.log('🔄 Auto-restarting speech recognition (Chrome stopped it due to silence)...');
     SpeechRecognition.startListening({
@@ -90,7 +105,7 @@ export function useSpeech(onResult) {
 
       // 2. Request microphone permission (required for mobile browsers)
       console.log('🎤 Requesting microphone permission...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,

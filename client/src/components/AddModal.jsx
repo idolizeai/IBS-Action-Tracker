@@ -271,14 +271,14 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                       <button
                         type="button"
                         onClick={toggleMic}
-                        className={`absolute right-3 top-3 p-1.5 rounded-lg transition-all duration-150 ${
+                        className={`absolute right-3 top-3 p-2 rounded-lg transition-all duration-200 ${
                           listening
-                            ? 'bg-red-500 text-white animate-pulse'
+                            ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50'
                             : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
                         }`}
-                        title={listening ? 'Stop recording' : 'Speak to type'}
+                        title={listening ? '🔴 STOP Recording' : '🎤 Speak to type'}
                       >
-                        {listening ? <MicOff size={16} /> : <Mic size={16} />}
+                        {listening ? <MicOff size={18} /> : <Mic size={18} />}
                       </button>
                     )}
                   </div>
