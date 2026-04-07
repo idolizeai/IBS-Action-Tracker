@@ -9,28 +9,28 @@ import { useSpeech } from '../hooks/useSpeech';
 const FUNCTIONS = ['HR', 'Admin', 'Lead', 'Sales', 'Solution', 'Proposal', 'Finance', 'Operations', 'Marketing', 'Technical'];
 
 const PRIORITY_OPTS = [
-  { value: 0, label: 'P0 · Now',       selectedClass: 'bg-red-600    border-red-600    text-white shadow-sm shadow-red-500/30' },
-  { value: 1, label: 'P1 · Today',     selectedClass: 'bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-500/30' },
+  { value: 0, label: 'P0 · Now', selectedClass: 'bg-red-600    border-red-600    text-white shadow-sm shadow-red-500/30' },
+  { value: 1, label: 'P1 · Today', selectedClass: 'bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-500/30' },
   { value: 2, label: 'P2 · This week', selectedClass: 'bg-amber-400  border-amber-400  text-white shadow-sm shadow-amber-400/30' },
-  { value: 3, label: 'P3 · Weekend',   selectedClass: 'bg-blue-600   border-blue-600   text-white shadow-sm shadow-blue-500/30' },
-  { value: 4, label: 'P4 · TBD',       selectedClass: 'bg-slate-500  border-slate-500  text-white shadow-sm' },
+  { value: 3, label: 'P3 · Weekend', selectedClass: 'bg-blue-600   border-blue-600   text-white shadow-sm shadow-blue-500/30' },
+  { value: 4, label: 'P4 · TBD', selectedClass: 'bg-slate-500  border-slate-500  text-white shadow-sm' },
 ];
 
 const FINANCIAL_OPTS = [
   { value: 'very_high', label: 'Very High', selectedClass: 'bg-red-600    border-red-600    text-white shadow-sm' },
-  { value: 'high',      label: 'High',      selectedClass: 'bg-orange-500 border-orange-500 text-white shadow-sm' },
-  { value: 'moderate',  label: 'Moderate',  selectedClass: 'bg-amber-400  border-amber-400  text-white shadow-sm' },
-  { value: 'low',       label: 'Low',       selectedClass: 'bg-green-600  border-green-600  text-white shadow-sm' },
-  { value: 'none',      label: 'None',      selectedClass: 'bg-slate-400  border-slate-400  text-white shadow-sm' },
+  { value: 'high', label: 'High', selectedClass: 'bg-orange-500 border-orange-500 text-white shadow-sm' },
+  { value: 'moderate', label: 'Moderate', selectedClass: 'bg-amber-400  border-amber-400  text-white shadow-sm' },
+  { value: 'low', label: 'Low', selectedClass: 'bg-green-600  border-green-600  text-white shadow-sm' },
+  { value: 'none', label: 'None', selectedClass: 'bg-slate-400  border-slate-400  text-white shadow-sm' },
 ];
 
 const COMM_OPTS = [
-  { value: 'email',          label: 'Email' },
-  { value: 'in_person',      label: 'In-Person' },
+  { value: 'email', label: 'Email' },
+  { value: 'in_person', label: 'In-Person' },
   { value: 'remote_meeting', label: 'Remote Meeting' },
-  { value: 'chat',           label: 'Chat' },
-  { value: 'phone',          label: 'Phone' },
-  { value: 'none',           label: 'None' },
+  { value: 'chat', label: 'Chat' },
+  { value: 'phone', label: 'Phone' },
+  { value: 'none', label: 'None' },
 ];
 
 const EMPTY = {
@@ -44,23 +44,23 @@ const EMPTY = {
 };
 
 export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, editTask, isCollaboratorTask = false }) {
-  const [form, setForm]         = useState(EMPTY);
-  const [saving, setSaving]     = useState(false);
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
-  const debounceRef             = useRef(null);
+  const debounceRef = useRef(null);
 
   // On open: load draft from server (new task only) or load editTask values
   useEffect(() => {
     if (!open) return;
     if (editTask) {
       setForm({
-        title:            editTask.title,
-        priority:         editTask.priority,
-        function_type:    editTask.function_type,
-        ibs_lead_id:      editTask.ibs_lead_id,
-        customer_id:      editTask.customer_id,
+        title: editTask.title,
+        priority: editTask.priority,
+        function_type: editTask.function_type,
+        ibs_lead_id: editTask.ibs_lead_id,
+        customer_id: editTask.customer_id,
         financial_impact: editTask.financial_impact,
-        comm_mode:        editTask.comm_mode,
+        comm_mode: editTask.comm_mode,
       });
       setHasDraft(false);
     } else {
@@ -83,12 +83,12 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
   useEffect(() => {
     if (editTask || !open) return;
     const hasAnyData = form.title || form.priority !== null || form.function_type ||
-                       form.ibs_lead_id || form.customer_id || form.financial_impact || form.comm_mode;
+      form.ibs_lead_id || form.customer_id || form.financial_impact || form.comm_mode;
     if (!hasAnyData) return;
 
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      api.put('/draft', form).catch(() => {}); // silent fail — draft is best-effort
+      api.put('/draft', form).catch(() => { }); // silent fail — draft is best-effort
     }, 800);
 
     return () => clearTimeout(debounceRef.current);
@@ -105,7 +105,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
   }
 
   function dismissDraft() {
-    api.delete('/draft').catch(() => {});
+    api.delete('/draft').catch(() => { });
     setHasDraft(false);
     setForm(EMPTY);
   }
@@ -114,22 +114,15 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
     setForm(f => ({ ...f, title: (f.title ? f.title + ' ' : '') + text }));
   }, []);
 
-  const { listening, toggle: toggleMic, supported: micSupported, interimTranscript, error: speechError } = useSpeech(handleSpeechResult);
-
-  // Show error if speech recognition fails
-  useEffect(() => {
-    if (speechError) {
-      toast.error(speechError);
-    }
-  }, [speechError]);
+  const { listening, toggle: toggleMic, stop: stopMic, supported: micSupported, interimTranscript } = useSpeech(handleSpeechResult);
 
   // Auto-stop microphone when modal closes
   useEffect(() => {
     if (!open && listening) {
       console.log('🛑 Modal closed — stopping microphone');
-      toggleMic(); // Call toggle to stop listening
+      stopMic(); // Directly stop rather than toggle
     }
-  }, [open, listening, toggleMic]);
+  }, [open, listening, stopMic]);
 
   const isComplete = form.priority !== null &&
     form.function_type && form.ibs_lead_id && form.customer_id &&
@@ -152,6 +145,8 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
   const showDraftButton = !editTask || editTask?.is_draft || !isComplete;
 
   async function handleSave(asDraft = false) {
+    if (listening) stopMic(); // ALWAYS STOP MIC on submit
+
     if (asDraft) {
       if (!canSaveDraft) return;
     } else {
@@ -173,7 +168,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
         toast.success(asDraft ? 'Draft saved' : 'Task added');
       }
       clearTimeout(debounceRef.current);
-      api.delete('/draft').catch(() => {});
+      api.delete('/draft').catch(() => { });
       onClose();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save');
@@ -182,9 +177,9 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
     }
   }
 
-  const functionOpts  = FUNCTIONS.map(f => ({ value: f, label: f }));
-  const ibsOpts       = ibsLeads.filter(l => l.active).map(l => ({ value: l.id, label: l.name }));
-  const customerOpts  = customers.filter(c => c.active).map(c => ({
+  const functionOpts = FUNCTIONS.map(f => ({ value: f, label: f }));
+  const ibsOpts = ibsLeads.filter(l => l.active).map(l => ({ value: l.id, label: l.name }));
+  const customerOpts = customers.filter(c => c.active).map(c => ({
     value: c.id,
     label: c.is_internal ? `${c.name} (Internal)` : c.name,
   }));
@@ -220,9 +215,9 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
   flex flex-col border border-slate-200
   h-[85dvh] md:h-auto md:max-h-[88vh]
 "
->
+            >
 
-  
+
               {/* Header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 flex-shrink-0">
                 <div>
@@ -258,7 +253,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
               )}
 
               {/* Body */}
-<div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 sm:py-5 space-y-4 sm:space-y-6">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 sm:py-5 space-y-4 sm:space-y-6">
                 {/* Title + mic */}
                 <div>
                   <label className="block text-xs text-slate-500 mb-2 font-semibold uppercase tracking-wider">
@@ -278,14 +273,13 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                       <button
                         type="button"
                         onClick={toggleMic}
-                        className={`absolute right-3 top-3 p-2 rounded-lg transition-all duration-200 ${
-                          listening
-                            ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50'
-                            : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
-                        }`}
-                        title={listening ? '🔴 STOP Recording' : '🎤 Speak to type'}
+                        className={`absolute right-3 top-3 p-2 rounded-full transition-all duration-300 ${listening
+                            ? 'bg-blue-600 text-white animate-pulse shadow-lg shadow-blue-500/50'
+                            : 'bg-red-500 text-white shadow-sm border border-red-600 shadow-red-500/10'
+                          }`}
+                        title={listening ? '🛑 Stop Recording' : '🎤 Start Recording'}
                       >
-                        {listening ? <MicOff size={18} /> : <Mic size={18} />}
+                        {listening ? <Mic size={18} /> : <MicOff size={18} />}
                       </button>
                     )}
                   </div>
@@ -304,12 +298,12 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                   )}
                 </div>
 
-                <BubbleSelector label="Priority"           options={PRIORITY_OPTS}  selected={form.priority}         onSelect={v => set('priority', v)}         disabled={isCollaboratorTask} />
-                <BubbleSelector label="Function"           options={functionOpts}   selected={form.function_type}    onSelect={v => set('function_type', v)}    disabled={isCollaboratorTask} />
-                <BubbleSelector label="IBS Lead"           options={ibsOpts}        selected={form.ibs_lead_id}      onSelect={v => set('ibs_lead_id', v)}      disabled={isCollaboratorTask} />
-                <BubbleSelector label="Customer"           options={customerOpts}   selected={form.customer_id}      onSelect={v => set('customer_id', v)}      disabled={isCollaboratorTask} />
-                <BubbleSelector label="Financial Impact"   options={FINANCIAL_OPTS} selected={form.financial_impact} onSelect={v => set('financial_impact', v)} disabled={isCollaboratorTask} />
-                <BubbleSelector label="Communication Mode" options={COMM_OPTS}      selected={form.comm_mode}        onSelect={v => set('comm_mode', v)}        disabled={isCollaboratorTask} />
+                <BubbleSelector label="Priority" options={PRIORITY_OPTS} selected={form.priority} onSelect={v => set('priority', v)} disabled={isCollaboratorTask} />
+                <BubbleSelector label="Function" options={functionOpts} selected={form.function_type} onSelect={v => set('function_type', v)} disabled={isCollaboratorTask} />
+                <BubbleSelector label="IBS Lead" options={ibsOpts} selected={form.ibs_lead_id} onSelect={v => set('ibs_lead_id', v)} disabled={isCollaboratorTask} />
+                <BubbleSelector label="Customer" options={customerOpts} selected={form.customer_id} onSelect={v => set('customer_id', v)} disabled={isCollaboratorTask} />
+                <BubbleSelector label="Financial Impact" options={FINANCIAL_OPTS} selected={form.financial_impact} onSelect={v => set('financial_impact', v)} disabled={isCollaboratorTask} />
+                <BubbleSelector label="Communication Mode" options={COMM_OPTS} selected={form.comm_mode} onSelect={v => set('comm_mode', v)} disabled={isCollaboratorTask} />
               </div>
 
               {/* Footer */}
@@ -319,9 +313,8 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                     {filled.map((done, i) => (
                       <div
                         key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                          done ? 'bg-blue-500' : 'bg-slate-200'
-                        }`}
+                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${done ? 'bg-blue-500' : 'bg-slate-200'
+                          }`}
                       />
                     ))}
                   </div>
@@ -337,8 +330,8 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                       >
                         {saving ? (
                           <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                           </svg>
                         ) : <FileText size={16} />}
                         <span>{saving ? 'Saving…' : 'Save as Draft'}</span>
@@ -353,8 +346,8 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                     >
                       {saving ? (
                         <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                         </svg>
                       ) : <Save size={16} />}
                       {saving

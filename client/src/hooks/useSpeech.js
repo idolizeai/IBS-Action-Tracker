@@ -1,158 +1,169 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
-/**
- * useSpeech Hook using native Web Speech API
- * @param {Function} onResult - Callback when a final transcript is received
- */
 export function useSpeech(onResult) {
-  const [listening, setListening] = useState(false);
-  const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState(null);
-  const [supported, setSupported] = useState(false);
-  
-  const recognitionRef = useRef(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const userInitiatedRef = useRef(false);
   const manualStopRef = useRef(false);
-  const onResultRef = useRef(onResult);
 
-  // Keep onResult callback updated without re-triggering effects
-  useEffect(() => {
-    onResultRef.current = onResult;
-  }, [onResult]);
+  const {
+    interimTranscript,
+    finalTranscript,
+    listening,
+    browserSupportsSpeechRecognition,
+    resetTranscript,
+  } = useSpeechRecognition();
 
-  // Handle initialization and browser support
+  // Log every state change for debugging
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-      setSupported(false);
-      console.warn('⚠️ Native Speech Recognition is not supported in this browser');
+    console.log('📊 SpeechRecognition State:', {
+      listening,
+      isStarting,
+      userInitiated: userInitiatedRef.current,
+      manualStop: manualStopRef.current,
+      error,
+      interimTranscript: interimTranscript?.length || 0,
+      finalTranscript: finalTranscript?.length || 0,
+      browserSupportsSpeechRecognition,
+    });
+  }, [listening, isStarting, error, interimTranscript, finalTranscript, browserSupportsSpeechRecognition]);
+
+  // SAFETY: Ensure speech recognition is stopped on mount (prevents auto-start)
+  useEffect(() => {
+    console.log('🛑 Mounting speech hook - ensuring mic is OFF');
+    SpeechRecognition.stopListening().catch(() => { });
+    resetTranscript();
+  }, [resetTranscript]);
+
+  // When speech recognition produces a final result, pass it to the parent
+  useEffect(() => {
+    if (!finalTranscript) return;
+    console.log('📝 Final transcript received:', finalTranscript);
+    onResult(finalTranscript);
+    resetTranscript();
+  }, [finalTranscript, onResult, resetTranscript]);
+
+  // Auto-restart ONLY if user previously started it AND didn't manually stop
+  useEffect(() => {
+    // SAFETY GUARD: Don't auto-start on page load - only restart if user had previously started
+    if (!userInitiatedRef.current) {
       return;
     }
 
-    setSupported(true);
-    const recognition = new SpeechRecognition();
-    
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onstart = () => {
-      console.log('🎤 Native Speech: Listening started');
-      setListening(true);
-      setError(null);
-    };
-
-    recognition.onresult = (event) => {
-      let interim = '';
-      let final = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final += transcript;
-        } else {
-          interim += transcript;
-        }
-      }
-
-      if (final) {
-        console.log('📝 Native Speech: Final transcript received:', final);
-        if (onResultRef.current) {
-          onResultRef.current(final.trim());
-        }
-      }
-      
-      setInterimTranscript(interim);
-    };
-
-    recognition.onerror = (event) => {
-      console.error('❌ Native Speech Error:', event.error);
-      
-      // Handle permission errors explicitly
-      if (event.error === 'not-allowed') {
-        setError('Microphone permission denied. Please allow mic access in your browser settings.');
-        manualStopRef.current = true;
-      } else if (event.error === 'no-speech') {
-        // Silent error, no need to show to user
-      } else if (event.error === 'aborted') {
-        // Recognition aborted, usually by manual stop
-      } else {
-        setError(`Speech recognition error: ${event.error}`);
-      }
-      
-      setListening(false);
-    };
-
-    recognition.onend = () => {
-      console.log('🛑 Native Speech: Connection ended');
-      
-      // Auto-restart logic for mobile browsers (Chrome mobile often stops quickly)
-      if (!manualStopRef.current) {
-        console.log('🔄 Native Speech: Auto-restarting session...');
-        try {
-          recognition.start();
-        } catch (e) {
-          // If it fails to restart, it might be due to "already started" or similar
-          console.warn('Native Speech: Auto-restart attempted but session state did not allow it.');
-          setListening(false);
-        }
-      } else {
-        setListening(false);
-        setInterimTranscript('');
-      }
-    };
-
-    recognitionRef.current = recognition;
-
-    // Cleanup on unmount
-    return () => {
-      if (recognitionRef.current) {
-        manualStopRef.current = true;
-        recognitionRef.current.onend = null; // Prevent auto-restart during cleanup
-        recognitionRef.current.stop();
-      }
+    // If user manually stopped, don't restart
+    if (manualStopRef.current) {
+      return;
     }
-  }, []);
 
-  const start = useCallback(() => {
-    if (!recognitionRef.current) return;
-    
-    manualStopRef.current = false;
+    // If already starting or already listening, don't restart
+    if (isStarting || listening) {
+      return;
+    }
+
+    // If browser doesn't support it, don't restart
+    if (!browserSupportsSpeechRecognition) {
+      return;
+    }
+
+    console.log('🔄 Auto-restarting speech recognition (Chrome stopped it due to silence)...');
+    SpeechRecognition.startListening({
+      continuous: true,
+      language: 'en-US',
+      interimResults: true,
+    }).catch(err => {
+      console.error('❌ Auto-restart failed:', err);
+      setError('Speech recognition failed to restart. Please click the mic icon again.');
+    });
+  }, [listening, isStarting, browserSupportsSpeechRecognition]);
+
+  const start = useCallback(async () => {
+    console.log('🎤 >>> START requested by user');
+
+    if (isStarting) {
+      console.log('⚠️ Already starting, ignoring...');
+      return;
+    }
+
+    if (listening) {
+      console.log('⚠️ Already listening, ignoring...');
+      return;
+    }
+
+    setIsStarting(true);
     setError(null);
+    resetTranscript();
+    manualStopRef.current = false;
+    userInitiatedRef.current = true; // Mark that user initiated this
+
     try {
-      recognitionRef.current.start();
-    } catch (err) {
-      // If already started, ignore. Otherwise log.
-      if (err.name !== 'InvalidStateError') {
-        console.error('❌ Native Speech: Failed to start', err);
-        setError('Failed to start microphone');
+      // 1. Check browser support
+      if (!browserSupportsSpeechRecognition) {
+        throw new Error('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
       }
+      console.log('✅ Browser supports speech recognition');
+
+      // 2. Request microphone permission (required for mobile browsers)
+      console.log('🎤 Requesting microphone permission...');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        }
+      });
+      console.log('✅ Microphone permission granted');
+      stream.getTracks().forEach(track => track.stop());
+
+      // 3. Start speech recognition
+      console.log('🎤 Calling SpeechRecognition.startListening()...');
+      await SpeechRecognition.startListening({
+        continuous: true,
+        language: 'en-US',
+        interimResults: true,
+      });
+
+      console.log('✅ Speech recognition started successfully - NOW LISTENING');
+
+    } catch (err) {
+      console.error('❌ Microphone error:', err);
+      setError(err.message || 'Failed to start microphone');
+      manualStopRef.current = true;
+      userInitiatedRef.current = false;
+      try {
+        SpeechRecognition.stopListening();
+      } catch { }
+    } finally {
+      setIsStarting(false);
     }
-  }, []);
+  }, [browserSupportsSpeechRecognition, isStarting, listening, resetTranscript]);
 
   const stop = useCallback(() => {
-    if (!recognitionRef.current) return;
-    
-    manualStopRef.current = true;
-    recognitionRef.current.stop();
-    setListening(false);
-    setInterimTranscript('');
-  }, []);
+    console.log('🛑 >>> STOP requested by user');
+    manualStopRef.current = true; // Mark as manually stopped so auto-restart won't fire
+    userInitiatedRef.current = false; // Reset user initiation
+    SpeechRecognition.stopListening();
+    resetTranscript();
+    setIsStarting(false);
+    setError(null);
+    console.log('✅ Speech recognition STOPPED');
+  }, [resetTranscript]);
 
-  const toggle = useCallback(() => {
+  const toggle = useCallback(async () => {
+    console.log('🔄 Toggle clicked. Current state: listening =', listening);
     if (listening) {
       stop();
     } else {
-      start();
+      await start();
     }
   }, [listening, start, stop]);
 
   return {
     listening,
     toggle,
-    supported,
+    stop,
+    supported: browserSupportsSpeechRecognition,
     interimTranscript,
     error,
-    isStarting: false, // Compatibility with previous state
+    isStarting,
   };
 }
