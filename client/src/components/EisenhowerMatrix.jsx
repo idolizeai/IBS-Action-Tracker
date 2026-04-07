@@ -302,7 +302,7 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
         </div>
       </div>
 
-      {/* ── Mobile: stacked sections (no drag-drop) ── */}
+      {/* ── Mobile: stacked sections ── */}
       <div className="md:hidden space-y-4 pb-24">
         {/* Urgency/Importance header */}
         <div className="flex gap-2 text-[10px] font-black tracking-widest">
@@ -310,10 +310,20 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
           <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-500 border border-blue-200 uppercase">Importance axis ↓</span>
         </div>
 
-        {QUADRANTS.map(q => {
+        {QUADRANTS.map((q, idx) => {
           const qtasks = getTasksForQuadrant(q.prios);
+          const isOverQuad = dragOverQuad === idx;
           return (
-            <div key={q.id} className={`rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden`}>
+            <div
+              key={q.id}
+              onDragOver={handleDragOver}
+              onDragEnter={() => handleDragEnter(idx)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, idx)}
+              className={`rounded-2xl border-2 ${q.border} ${q.bg} overflow-hidden transition-all duration-200 ${
+                isOverQuad && draggedTask ? 'shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-[1.02]' : ''
+              }`}
+            >
               <div className={`bg-gradient-to-br ${q.headerGrad} px-4 py-3 flex items-center justify-between`}>
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="text-lg font-black text-white/30 flex-shrink-0">{q.num}</span>
@@ -323,6 +333,11 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {isOverQuad && draggedTask && !q.prios.includes(draggedTask.priority) && (
+                    <span className="text-[10px] font-black tracking-widest bg-blue-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                      DROP
+                    </span>
+                  )}
                   <span className="text-[10px] font-black tracking-widest bg-white/20 text-white px-2 py-0.5 rounded-full">
                     {q.action}
                   </span>
@@ -331,12 +346,20 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
                   </span>
                 </div>
               </div>
-              {qtasks.length > 0 ? (
-                // ✅ FIX 6: overflow-x-hidden on mobile task list too
+
+              {qtasks.length > 0 || (isOverQuad && draggedTask) ? (
                 <div className="overflow-y-auto overflow-x-hidden p-3 space-y-2" style={{ maxHeight: '320px' }}>
                   {qtasks.map(task => (
-                    // ✅ FIX 7: min-w-0 w-full on each mobile task wrapper
-                    <div key={task.id} className="min-w-0 w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                    <div
+                      key={task.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, task)}
+                      onDragEnd={handleDragEnd}
+                      className={`cursor-grab active:cursor-grabbing transform transition-all duration-150 min-w-0 w-full ${
+                        draggedTask?.id === task.id ? 'opacity-40 scale-95' : 'opacity-100 scale-100'
+                      }`}
+                      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                    >
                       {q.prios.length > 1 && (
                         <div className="flex justify-end mb-1">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${PRIO_BADGE[task.priority].cls}`}>
@@ -347,6 +370,11 @@ export default function EisenhowerMatrix({ tasks, onUpdated, onDeleted, onEdit }
                       <TaskCard task={task} onUpdated={onUpdated} onDeleted={onDeleted} onEdit={onEdit} />
                     </div>
                   ))}
+                  {qtasks.length === 0 && isOverQuad && draggedTask && (
+                    <div className="flex flex-col items-center py-6 border-2 border-dashed border-blue-300 rounded-xl bg-blue-50">
+                      <span className="text-xs font-bold text-blue-500">Drop here</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center py-6">

@@ -56,8 +56,8 @@ export default function Dashboard() {
     ).catch(() => toast.error('Failed to load masters'));
   }, []);
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
+  const fetchTasks = useCallback(async (options = {}) => {
+    if (!options.silent) setLoading(true);
     try {
       const params = { done: false };
       if (filters.priority !== null) params.priority = filters.priority;
@@ -79,8 +79,13 @@ export default function Dashboard() {
   function handleTaskSaved() { setEditTask(null); fetchTasks(); }
 
   function handleTaskUpdated(data) {
-    if (data.done) setTasks(ts => ts.filter(t => t.id !== data.id));
-    else setTasks(ts => ts.map(t => t.id === data.id ? data : t));
+    if (data.done) {
+      setTasks(ts => ts.filter(t => t.id !== data.id));
+    } else {
+      setTasks(ts => ts.map(t => t.id === data.id ? { ...t, ...data } : t));
+      // Re-fetch silently to ensure joined names are refreshed
+      fetchTasks();
+    }
   }
 
   function handleTaskDeleted(id) { setTasks(ts => ts.filter(t => t.id !== id)); }
