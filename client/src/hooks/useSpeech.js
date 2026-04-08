@@ -6,53 +6,75 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOBILE: Use the raw native SpeechRecognition API.
-// react-speech-recognition wraps it in React state which causes stale-closure
-// bugs in the restart loop on mobile. The native API lets us wire onend/onerror
-// directly to refs — no stale values, no missed restarts.
+// MOBILE: Use the raw native SpeechRecognition API directly.
+//
+// Why not react-speech-recognition on mobile?
+//   - The library wraps results in React state → stale closures in restart loops
+//
+// Why create a fresh instance on every start?
+//   - With continuous=true, the browser accumulates all results in event.results[]
+//   - Re-using the same object after abort() causes old final results to re-fire
+//     through the same onresult handler → words get typed 4x, 5x, etc.
+//   - A fresh instance always starts with an empty results array
+//
+// Why sessionId?
+//   - Restart is asynchronous (setTimeout). A stale "onend" callback from the
+//     previous session might fire after the user pressed Stop and then Start again.
+//     sessionId lets us discard events from the wrong session instantly.
 // ─────────────────────────────────────────────────────────────────────────────
 function useMobileSpeech(onResult) {
   const [listening, setListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState(null);
-  const [isStarting, setIsStarting] = useState(false);
 
   const userWantsMicOn = useRef(false);
-  const isRunningRef = useRef(false);
   const recognitionRef = useRef(null);
   const onResultRef = useRef(onResult);
-  const startNativeFnRef = useRef(null); // forward-ref so onend can call it
   const retryTimerRef = useRef(null);
-  const lastFinalResultAt = useRef(0); // timestamp of last final result
+  const sessionIdRef = useRef(0); // increment on every user-initiated start
 
-  // Keep onResult ref fresh without re-creating recognition
+  // Keep onResult ref fresh so handlers never go stale
   useEffect(() => { onResultRef.current = onResult; }, [onResult]);
 
-  // Create the native recognition instance once on mount
-  useEffect(() => {
-    const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechAPI) return;
+  // ─── Core: create a fresh instance and start it ──────────────────────────
+  // `mySessionId` lets every callback know which "generation" they belong to.
+  const makeAndStart = useCallback((mySessionId) => {
+    // Bail if user already pressed stop, or this is a stale restart
+    if (!userWantsMicOn.current) return;
+    if (mySessionId !== sessionIdRef.current) return;
 
+    const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechAPI) {
+      setError('Speech recognition not supported on this device.');
+      return;
+    }
+
+    // Tear down old instance silently
+    if (recognitionRef.current) {
+      try { recognitionRef.current.onend = null; recognitionRef.current.abort(); } catch { }
+      recognitionRef.current = null;
+    }
+
+    // Fresh instance = empty results[], no re-delivery of past transcripts
     const recognition = new SpeechAPI();
-    // continuous=true: keeps the session alive after each utterance so we don't
-    // get the audible mic click/pop on every sentence. Mobile Chrome respects this
-    // for delivering results — it only terminates on prolonged silence (handled by onend).
-    recognition.continuous = true;
+    recognition.continuous = true;   // Keep session open between sentences
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
+    recognitionRef.current = recognition;
 
     recognition.onstart = () => {
-      console.log('📱 [Mobile] onstart');
-      isRunningRef.current = true;
+      if (mySessionId !== sessionIdRef.current) return;
+      console.log(`📱 [Mobile] Session ${mySessionId} started`);
       setListening(true);
-      setIsStarting(false);
       setError(null);
     };
 
     recognition.onresult = (event) => {
+      if (mySessionId !== sessionIdRef.current) return;
       let interim = '';
       let final = '';
+      // event.resultIndex = index of the newest result — only process from there
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const text = event.results[i][0].transcript;
         if (event.results[i].isFinal) final += text;
@@ -60,132 +82,126 @@ function useMobileSpeech(onResult) {
       }
       if (interim) setInterimTranscript(interim);
       if (final) {
-        console.log('📝 [Mobile] Final:', final);
-        lastFinalResultAt.current = Date.now(); // track when speech was last processed
+        console.log(`📝 [Mobile] Session ${mySessionId} final:`, final);
         setInterimTranscript('');
         onResultRef.current(final);
       }
     };
 
     recognition.onerror = (event) => {
-      console.error('❌ [Mobile] onerror:', event.error);
-      isRunningRef.current = false;
+      if (mySessionId !== sessionIdRef.current) return;
+      console.error(`❌ [Mobile] Session ${mySessionId} error:`, event.error);
       setListening(false);
 
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         userWantsMicOn.current = false;
-        setIsStarting(false);
         setError('Microphone permission denied. Please allow mic access and try again.');
         return;
       }
+      if (event.error === 'aborted' || !userWantsMicOn.current) return;
 
-      if (event.error === 'aborted' || !userWantsMicOn.current) {
-        setIsStarting(false);
-        return;
-      }
-
-      // For no-speech, network, audio-capture etc. — schedule a restart
-      console.log('🔄 [Mobile] onerror restart in 400ms…');
+      // Transient errors (no-speech, network) → retry same session
+      console.log(`🔄 [Mobile] Session ${mySessionId} retrying after error in 400ms…`);
       clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = setTimeout(() => startNativeFnRef.current?.(), 400);
+      retryTimerRef.current = setTimeout(() => makeAndStart(mySessionId), 400);
     };
 
     recognition.onend = () => {
-      console.log('📱 [Mobile] onend. userWantsMicOn:', userWantsMicOn.current);
-      isRunningRef.current = false;
+      if (mySessionId !== sessionIdRef.current) return;
+      console.log(`📱 [Mobile] Session ${mySessionId} ended`);
       setListening(false);
       setInterimTranscript('');
 
       if (!userWantsMicOn.current) return;
 
-      // If onend happened almost immediately after a final result (<1.5s),
-      // the browser ended cleanly post-utterance. Restart quickly (50ms).
-      // If it's a long silence timeout, restart with a short delay (150ms).
-      const msSinceFinal = Date.now() - lastFinalResultAt.current;
-      const delay = msSinceFinal < 1500 ? 50 : 150;
-      console.log(`🔄 [Mobile] onend restart in ${delay}ms (msSinceFinal=${msSinceFinal})…`);
+      // Mobile browser ended the session (silence timeout, OS interruption, etc.)
+      // Restart with the SAME session ID — still a valid continuous session
+      console.log(`🔄 [Mobile] Session ${mySessionId} restarting in 150ms…`);
       clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = setTimeout(() => startNativeFnRef.current?.(), delay);
+      retryTimerRef.current = setTimeout(() => makeAndStart(mySessionId), 150);
     };
 
-    recognitionRef.current = recognition;
-    return () => {
-      clearTimeout(retryTimerRef.current);
-      try { recognition.abort(); } catch { }
-      recognitionRef.current = null;
-    };
-  }, []); // run once
-
-  // The actual native start — called by user action AND by onend/onerror
-  const startNative = useCallback(() => {
-    if (!userWantsMicOn.current) return;
-    if (isRunningRef.current) return;
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
-
-    console.log('📱 [Mobile] Calling recognition.start()');
     try {
       recognition.start();
     } catch (err) {
-      console.error('❌ [Mobile] recognition.start() threw:', err);
-      isRunningRef.current = false;
-      // InvalidStateError means it's already started — clear the flag and wait
-      clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = setTimeout(() => startNativeFnRef.current?.(), 500);
+      console.error(`❌ [Mobile] Session ${mySessionId} start() threw:`, err);
+      if (userWantsMicOn.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = setTimeout(() => makeAndStart(mySessionId), 500);
+      }
     }
-  }, []);
+  }, []); // intentionally no deps — everything is accessed via refs
 
-  // Keep the forward-ref up to date
-  useEffect(() => { startNativeFnRef.current = startNative; }, [startNative]);
-
-  const start = useCallback(async () => {
+  // ─── start (user action) ─────────────────────────────────────────────────
+  const start = useCallback(() => {
     console.log('🎤 [Mobile] >>> START');
-    if (!recognitionRef.current) {
+    if (userWantsMicOn.current) return; // already running
+
+    const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechAPI) {
       setError('Speech recognition not supported on this device.');
       return;
     }
-    if (isRunningRef.current || isStarting) return;
 
     userWantsMicOn.current = true;
-    setIsStarting(true);
     setError(null);
     clearTimeout(retryTimerRef.current);
-    startNative();
-  }, [isStarting, startNative]);
 
+    // Bump session ID → any pending callbacks from the previous session become no-ops
+    sessionIdRef.current += 1;
+    makeAndStart(sessionIdRef.current);
+  }, [makeAndStart]);
+
+  // ─── stop (user action) ──────────────────────────────────────────────────
   const stop = useCallback(() => {
     console.log('🛑 [Mobile] >>> STOP');
     userWantsMicOn.current = false;
     clearTimeout(retryTimerRef.current);
+    // Bump session ID immediately → all pending onend/onerror callbacks become no-ops
+    sessionIdRef.current += 1;
     setListening(false);
-    setIsStarting(false);
     setInterimTranscript('');
     setError(null);
-    isRunningRef.current = false;
-    try { recognitionRef.current?.abort(); } catch { }
+    if (recognitionRef.current) {
+      try { recognitionRef.current.onend = null; recognitionRef.current.abort(); } catch { }
+      recognitionRef.current = null;
+    }
   }, []);
 
-  const toggle = useCallback(async () => {
+  // ─── toggle ──────────────────────────────────────────────────────────────
+  const toggle = useCallback(() => {
     if (userWantsMicOn.current) stop();
-    else await start();
+    else start();
   }, [start, stop]);
 
-  const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // ─── cleanup on unmount ──────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      userWantsMicOn.current = false;
+      clearTimeout(retryTimerRef.current);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.onend = null; recognitionRef.current.abort(); } catch { }
+        recognitionRef.current = null;
+      }
+    };
+  }, []);
+
+  const supported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   return {
-    // Show UI as "listening" whenever user wants it, even during the 100ms restart gap
-    listening: userWantsMicOn.current ? (listening || isStarting) : false,
+    // Keep UI green during the brief 150ms restart gap
+    listening: userWantsMicOn.current ? (listening || false) : false,
     toggle,
     stop,
-    supported: !!SpeechAPI,
+    supported,
     interimTranscript,
     error,
-    isStarting,
+    isStarting: false,
   };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DESKTOP: Use react-speech-recognition (works reliably on non-mobile browsers)
+// DESKTOP: react-speech-recognition (works reliably on desktop browsers)
 // ─────────────────────────────────────────────────────────────────────────────
 function useDesktopSpeech(onResult) {
   const [error, setError] = useState(null);
@@ -244,7 +260,7 @@ function useDesktopSpeech(onResult) {
     userWantsMicOn.current = true;
 
     try {
-      // Grab a stream so killStream can turn off the browser mic indicator on close
+      // Desktop: grab stream so killStream can turn off the browser mic indicator on close
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
@@ -294,7 +310,8 @@ function useDesktopSpeech(onResult) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Public hook: routes to the right engine based on platform
+// Public hook: routes to the right engine based on platform.
+// Both hooks are always called (React rules), isMobile is a module-level constant.
 // ─────────────────────────────────────────────────────────────────────────────
 export function useSpeech(onResult) {
   const mobile = useMobileSpeech(onResult);
