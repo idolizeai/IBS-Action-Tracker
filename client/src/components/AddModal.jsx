@@ -116,11 +116,20 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
 
   const { listening, toggle: toggleMic, stop: stopMic, supported: micSupported, interimTranscript } = useSpeech(handleSpeechResult);
 
-  // Auto-stop microphone when modal closes
+  // Always stop mic before closing the modal (covers X button, backdrop click, save, draft)
+  const handleClose = useCallback(() => {
+    if (listening) {
+      console.log('🛑 handleClose — stopping microphone before close');
+      stopMic();
+    }
+    onClose();
+  }, [listening, stopMic, onClose]);
+
+  // Safety net: if open becomes false while mic is still on, force-stop
   useEffect(() => {
     if (!open && listening) {
-      console.log('🛑 Modal closed — stopping microphone');
-      stopMic(); // Directly stop rather than toggle
+      console.log('🛑 Modal unmounted — force-stopping microphone');
+      stopMic();
     }
   }, [open, listening, stopMic]);
 
@@ -145,7 +154,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
   const showDraftButton = !editTask || editTask?.is_draft || !isComplete;
 
   async function handleSave(asDraft = false) {
-    if (listening) stopMic(); // ALWAYS STOP MIC on submit
+    if (listening) stopMic(); // Always stop mic on save/draft
 
     if (asDraft) {
       if (!canSaveDraft) return;
@@ -169,7 +178,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
       }
       clearTimeout(debounceRef.current);
       api.delete('/draft').catch(() => { });
-      onClose();
+      handleClose();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save');
     } finally {
@@ -195,7 +204,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={handleClose}
           />
 
           {/* Sheet */}
@@ -230,7 +239,7 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                     </p>
                   )}
                 </div>
-                <button onClick={onClose} className="btn-ghost p-2 rounded-lg">
+                <button onClick={handleClose} className="btn-ghost p-2 rounded-lg">
                   <X size={18} />
                 </button>
               </div>
@@ -270,29 +279,37 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                       autoFocus={!editTask && !isCollaboratorTask}
                     />
                     {micSupported && !isCollaboratorTask && (
-                      <button
-                        type="button"
-                        onClick={toggleMic}
-                        className={`absolute right-3 top-3 p-2 rounded-full transition-all duration-300 ${listening
-                            ? 'bg-blue-600 text-white animate-pulse shadow-lg shadow-blue-500/50'
-                            : 'bg-red-500 text-white shadow-sm border border-red-600 shadow-red-500/10'
+                      <div className="absolute right-3 top-3">
+                        {/* Outer pulse ring — only when listening */}
+                        {listening && (
+                          <span className="absolute inset-0 rounded-full bg-green-400/30 animate-ping" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={toggleMic}
+                          className={`relative p-2 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                            listening
+                              ? 'bg-green-500 text-white shadow-md shadow-green-500/40 focus:ring-green-400'
+                              : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 focus:ring-slate-300'
                           }`}
-                        title={listening ? '🛑 Stop Recording' : '🎤 Start Recording'}
-                      >
-                        {listening ? <Mic size={18} /> : <MicOff size={18} />}
-                      </button>
+                          title={listening ? 'Microphone on — click to mute' : 'Microphone off — click to unmute'}
+                          aria-label={listening ? 'Stop recording' : 'Start recording'}
+                        >
+                          {listening ? <Mic size={18} /> : <MicOff size={18} />}
+                        </button>
+                      </div>
                     )}
                   </div>
                   {listening && (
-                    <div className="mt-2 px-3 py-2 rounded-lg bg-red-50 border border-red-100">
-                      <p className="text-xs text-red-500 flex items-center gap-1.5 font-semibold mb-1">
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse inline-block" />
-                        Listening… speak now
+                    <div className="mt-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200">
+                      <p className="text-xs text-green-600 flex items-center gap-1.5 font-semibold mb-1">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse inline-block" />
+                        Mic on · speak now
                       </p>
                       {interimTranscript ? (
-                        <p className="text-sm text-slate-500 italic leading-snug">{interimTranscript}</p>
+                        <p className="text-sm text-slate-600 italic leading-snug">{interimTranscript}</p>
                       ) : (
-                        <p className="text-xs text-slate-400">Words will appear here as you speak</p>
+                        <p className="text-xs text-slate-400">Words will appear here as you speak…</p>
                       )}
                     </div>
                   )}
