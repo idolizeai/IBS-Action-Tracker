@@ -6,6 +6,7 @@ export function useSpeech(onResult) {
   const [isStarting, setIsStarting] = useState(false);
   const userInitiatedRef = useRef(false);
   const manualStopRef = useRef(false);
+  const streamRef = useRef(null);
 
   const {
     interimTranscript,
@@ -77,6 +78,15 @@ export function useSpeech(onResult) {
     });
   }, [listening, isStarting, browserSupportsSpeechRecognition]);
 
+  const killStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop(); // This is what actually turns off the browser mic indicator
+      });
+      streamRef.current = null;
+    }
+  }, []);
+
   const start = useCallback(async () => {
     console.log('🎤 >>> START requested by user');
 
@@ -111,8 +121,9 @@ export function useSpeech(onResult) {
           noiseSuppression: true,
         }
       });
+      streamRef.current = stream;
       console.log('✅ Microphone permission granted');
-      stream.getTracks().forEach(track => track.stop());
+      // stream.getTracks().forEach(track => track.stop());
 
       // 3. Start speech recognition
       console.log('🎤 Calling SpeechRecognition.startListening()...');
@@ -145,8 +156,11 @@ export function useSpeech(onResult) {
     resetTranscript();
     setIsStarting(false);
     setError(null);
+
+    killStream()
     console.log('✅ Speech recognition STOPPED');
-  }, [resetTranscript]);
+
+  }, [resetTranscript, killStream]);
 
   const toggle = useCallback(async () => {
     console.log('🔄 Toggle clicked. Current state: listening =', listening);
