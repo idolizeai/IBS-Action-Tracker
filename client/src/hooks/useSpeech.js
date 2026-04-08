@@ -23,6 +23,7 @@ function useMobileSpeech(onResult) {
   const onResultRef = useRef(onResult);
   const startNativeFnRef = useRef(null); // forward-ref so onend can call it
   const retryTimerRef = useRef(null);
+  const lastFinalResultAt = useRef(0); // timestamp of last final result
 
   // Keep onResult ref fresh without re-creating recognition
   useEffect(() => { onResultRef.current = onResult; }, [onResult]);
@@ -33,9 +34,10 @@ function useMobileSpeech(onResult) {
     if (!SpeechAPI) return;
 
     const recognition = new SpeechAPI();
-    // continuous=false is intentional on mobile — mobile Chrome ignores true anyway.
-    // We handle "continuous" ourselves via onend → restart.
-    recognition.continuous = false;
+    // continuous=true: keeps the session alive after each utterance so we don't
+    // get the audible mic click/pop on every sentence. Mobile Chrome respects this
+    // for delivering results — it only terminates on prolonged silence (handled by onend).
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
@@ -59,6 +61,7 @@ function useMobileSpeech(onResult) {
       if (interim) setInterimTranscript(interim);
       if (final) {
         console.log('📝 [Mobile] Final:', final);
+        lastFinalResultAt.current = Date.now(); // track when speech was last processed
         setInterimTranscript('');
         onResultRef.current(final);
       }
@@ -95,10 +98,14 @@ function useMobileSpeech(onResult) {
 
       if (!userWantsMicOn.current) return;
 
-      // User still wants the mic — restart immediately (100ms hardware reset gap)
-      console.log('🔄 [Mobile] onend restart in 100ms…');
+      // If onend happened almost immediately after a final result (<1.5s),
+      // the browser ended cleanly post-utterance. Restart quickly (50ms).
+      // If it's a long silence timeout, restart with a short delay (150ms).
+      const msSinceFinal = Date.now() - lastFinalResultAt.current;
+      const delay = msSinceFinal < 1500 ? 50 : 150;
+      console.log(`🔄 [Mobile] onend restart in ${delay}ms (msSinceFinal=${msSinceFinal})…`);
       clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = setTimeout(() => startNativeFnRef.current?.(), 100);
+      retryTimerRef.current = setTimeout(() => startNativeFnRef.current?.(), delay);
     };
 
     recognitionRef.current = recognition;
