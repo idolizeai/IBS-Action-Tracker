@@ -113,27 +113,21 @@ export function useSpeech(onResult) {
       }
       console.log('✅ Browser supports speech recognition');
 
-      // 2. Request microphone permission briefly to trigger prompt if needed
-      console.log('🎤 Requesting microphone permission...');
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        if (isMobile) {
-          // Immediately release the stream so we don't lock the microphone 
-          // (Mobile devices only allow one process to use the mic, locking it here breaks SpeechRecognition)
-          stream.getTracks().forEach(track => track.stop());
-          console.log('✅ Microphone permission granted and stream released (Mobile)');
-        } else {
-          // Keep the stream so we can kill it later to turn off the browser mic indicator in production
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (!isMobile) {
+        // 2. Request microphone permission ONLY on desktop to grab the stream so we can manually kill the browser mic indicator later
+        console.log('🎤 Requesting desktop microphone permission for kill-stream...');
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           streamRef.current = stream;
-          console.log('✅ Microphone permission granted (Desktop)');
+          console.log('✅ Desktop Microphone permission granted');
+        } catch (mediaErr) {
+          console.warn('⚠️ getUserMedia failed/declined, proceeding with SpeechRecognition anyway:', mediaErr);
         }
-      } catch (mediaErr) {
-        console.warn('⚠️ getUserMedia failed/declined, proceeding with SpeechRecognition anyway:', mediaErr);
       }
 
-      // 3. Start speech recognition
+      // 3. Start native speech recognition (this will prompt on Mobile by itself!)
       console.log('🎤 Calling SpeechRecognition.startListening()...');
       await SpeechRecognition.startListening({
         continuous: true,
