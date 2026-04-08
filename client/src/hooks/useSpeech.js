@@ -113,17 +113,25 @@ export function useSpeech(onResult) {
       }
       console.log('✅ Browser supports speech recognition');
 
-      // 2. Request microphone permission (required for mobile browsers)
+      // 2. Request microphone permission briefly to trigger prompt if needed
       console.log('🎤 Requesting microphone permission...');
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+          // Immediately release the stream so we don't lock the microphone 
+          // (Mobile devices only allow one process to use the mic, locking it here breaks SpeechRecognition)
+          stream.getTracks().forEach(track => track.stop());
+          console.log('✅ Microphone permission granted and stream released (Mobile)');
+        } else {
+          // Keep the stream so we can kill it later to turn off the browser mic indicator in production
+          streamRef.current = stream;
+          console.log('✅ Microphone permission granted (Desktop)');
         }
-      });
-      streamRef.current = stream;
-      console.log('✅ Microphone permission granted');
-      // stream.getTracks().forEach(track => track.stop());
+      } catch (mediaErr) {
+        console.warn('⚠️ getUserMedia failed/declined, proceeding with SpeechRecognition anyway:', mediaErr);
+      }
 
       // 3. Start speech recognition
       console.log('🎤 Calling SpeechRecognition.startListening()...');
@@ -157,7 +165,7 @@ export function useSpeech(onResult) {
     setIsStarting(false);
     setError(null);
 
-    killStream()
+    killStream();
     console.log('✅ Speech recognition STOPPED');
 
   }, [resetTranscript, killStream]);
