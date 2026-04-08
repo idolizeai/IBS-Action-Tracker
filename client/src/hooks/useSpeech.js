@@ -5,15 +5,185 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
   navigator.userAgent
 );
 
-export function useSpeech(onResult) {
+// ─────────────────────────────────────────────────────────────────────────────
+// MOBILE: Use the raw native SpeechRecognition API.
+// react-speech-recognition wraps it in React state which causes stale-closure
+// bugs in the restart loop on mobile. The native API lets us wire onend/onerror
+// directly to refs — no stale values, no missed restarts.
+// ─────────────────────────────────────────────────────────────────────────────
+function useMobileSpeech(onResult) {
+  const [listening, setListening] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
 
-  // The single source of truth: does the USER want the mic on?
   const userWantsMicOn = useRef(false);
-  // Guard against overlapping restartAttempts (separate from isStarting)
-  const isRestartingRef = useRef(false);
-  const restartTimerRef = useRef(null);
+  const isRunningRef = useRef(false);
+  const recognitionRef = useRef(null);
+  const onResultRef = useRef(onResult);
+  const startNativeFnRef = useRef(null); // forward-ref so onend can call it
+  const retryTimerRef = useRef(null);
+
+  // Keep onResult ref fresh without re-creating recognition
+  useEffect(() => { onResultRef.current = onResult; }, [onResult]);
+
+  // Create the native recognition instance once on mount
+  useEffect(() => {
+    const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechAPI) return;
+
+    const recognition = new SpeechAPI();
+    // continuous=false is intentional on mobile — mobile Chrome ignores true anyway.
+    // We handle "continuous" ourselves via onend → restart.
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      console.log('📱 [Mobile] onstart');
+      isRunningRef.current = true;
+      setListening(true);
+      setIsStarting(false);
+      setError(null);
+    };
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const text = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += text;
+        else interim += text;
+      }
+      if (interim) setInterimTranscript(interim);
+      if (final) {
+        console.log('📝 [Mobile] Final:', final);
+        setInterimTranscript('');
+        onResultRef.current(final);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('❌ [Mobile] onerror:', event.error);
+      isRunningRef.current = false;
+      setListening(false);
+
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        userWantsMicOn.current = false;
+        setIsStarting(false);
+        setError('Microphone permission denied. Please allow mic access and try again.');
+        return;
+      }
+
+      if (event.error === 'aborted' || !userWantsMicOn.current) {
+        setIsStarting(false);
+        return;
+      }
+
+      // For no-speech, network, audio-capture etc. — schedule a restart
+      console.log('🔄 [Mobile] onerror restart in 400ms…');
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = setTimeout(() => startNativeFnRef.current?.(), 400);
+    };
+
+    recognition.onend = () => {
+      console.log('📱 [Mobile] onend. userWantsMicOn:', userWantsMicOn.current);
+      isRunningRef.current = false;
+      setListening(false);
+      setInterimTranscript('');
+
+      if (!userWantsMicOn.current) return;
+
+      // User still wants the mic — restart immediately (100ms hardware reset gap)
+      console.log('🔄 [Mobile] onend restart in 100ms…');
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = setTimeout(() => startNativeFnRef.current?.(), 100);
+    };
+
+    recognitionRef.current = recognition;
+    return () => {
+      clearTimeout(retryTimerRef.current);
+      try { recognition.abort(); } catch { }
+      recognitionRef.current = null;
+    };
+  }, []); // run once
+
+  // The actual native start — called by user action AND by onend/onerror
+  const startNative = useCallback(() => {
+    if (!userWantsMicOn.current) return;
+    if (isRunningRef.current) return;
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
+    console.log('📱 [Mobile] Calling recognition.start()');
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error('❌ [Mobile] recognition.start() threw:', err);
+      isRunningRef.current = false;
+      // InvalidStateError means it's already started — clear the flag and wait
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = setTimeout(() => startNativeFnRef.current?.(), 500);
+    }
+  }, []);
+
+  // Keep the forward-ref up to date
+  useEffect(() => { startNativeFnRef.current = startNative; }, [startNative]);
+
+  const start = useCallback(async () => {
+    console.log('🎤 [Mobile] >>> START');
+    if (!recognitionRef.current) {
+      setError('Speech recognition not supported on this device.');
+      return;
+    }
+    if (isRunningRef.current || isStarting) return;
+
+    userWantsMicOn.current = true;
+    setIsStarting(true);
+    setError(null);
+    clearTimeout(retryTimerRef.current);
+    startNative();
+  }, [isStarting, startNative]);
+
+  const stop = useCallback(() => {
+    console.log('🛑 [Mobile] >>> STOP');
+    userWantsMicOn.current = false;
+    clearTimeout(retryTimerRef.current);
+    setListening(false);
+    setIsStarting(false);
+    setInterimTranscript('');
+    setError(null);
+    isRunningRef.current = false;
+    try { recognitionRef.current?.abort(); } catch { }
+  }, []);
+
+  const toggle = useCallback(async () => {
+    if (userWantsMicOn.current) stop();
+    else await start();
+  }, [start, stop]);
+
+  const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  return {
+    // Show UI as "listening" whenever user wants it, even during the 100ms restart gap
+    listening: userWantsMicOn.current ? (listening || isStarting) : false,
+    toggle,
+    stop,
+    supported: !!SpeechAPI,
+    interimTranscript,
+    error,
+    isStarting,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DESKTOP: Use react-speech-recognition (works reliably on non-mobile browsers)
+// ─────────────────────────────────────────────────────────────────────────────
+function useDesktopSpeech(onResult) {
+  const [error, setError] = useState(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const userWantsMicOn = useRef(false);
   const streamRef = useRef(null);
 
   const {
@@ -24,16 +194,28 @@ export function useSpeech(onResult) {
     resetTranscript,
   } = useSpeechRecognition();
 
-  // Pass final transcript up to the parent
+  // Pass final transcript to parent
   useEffect(() => {
     if (!finalTranscript) return;
-    console.log('📝 Final transcript:', finalTranscript);
+    console.log('📝 [Desktop] Final:', finalTranscript);
     onResult(finalTranscript);
     resetTranscript();
   }, [finalTranscript, onResult, resetTranscript]);
 
-  // ─── killStream ────────────────────────────────────────────────────────────
-  // Desktop only: turns off the red browser mic indicator after stopping
+  // Auto-restart if Chrome silently stopped it (desktop silence timeout)
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) return;
+    if (!userWantsMicOn.current) return;
+    if (listening || isStarting) return;
+
+    console.log('🔄 [Desktop] Auto-restart…');
+    SpeechRecognition.startListening({ continuous: true, language: 'en-US', interimResults: true })
+      .catch(err => {
+        console.error('❌ [Desktop] Auto-restart failed:', err);
+        setError('Mic stopped. Click the mic button to resume.');
+      });
+  }, [listening, isStarting, browserSupportsSpeechRecognition]);
+
   const killStream = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
@@ -41,118 +223,46 @@ export function useSpeech(onResult) {
     }
   }, []);
 
-  // ─── Raw restart (no guards — intentionally aggressive) ───────────────────
-  // Mobile Chrome will kill SpeechRecognition after every sentence/pause.
-  // The ONLY fix is to immediately restart. We use a ref-based lock to prevent
-  // double-calls, but we do NOT check isStarting (that's only for the user button).
-  const scheduleRestart = useCallback(() => {
-    if (!userWantsMicOn.current) return;
-    if (isRestartingRef.current) return;
-
-    clearTimeout(restartTimerRef.current);
-    isRestartingRef.current = true;
-
-    // On mobile, use a tiny delay (100ms) to let the hardware reset cleanly.
-    // On desktop this path rarely executes, but keep it safe.
-    restartTimerRef.current = setTimeout(async () => {
-      if (!userWantsMicOn.current) {
-        isRestartingRef.current = false;
-        return;
-      }
-      console.log('🔄 Auto-restarting (mobile browser stopped SpeechRecognition)…');
-      try {
-        await SpeechRecognition.startListening({
-          continuous: true,
-          language: 'en-US',
-          interimResults: true,
-        });
-        console.log('✅ Auto-restart successful');
-      } catch (err) {
-        console.warn('⚠️ Auto-restart failed, retrying in 500ms:', err);
-        // If the restart itself fails, try again shortly
-        restartTimerRef.current = setTimeout(() => {
-          isRestartingRef.current = false;
-          scheduleRestart();
-        }, 500);
-        return;
-      }
-      isRestartingRef.current = false;
-    }, isMobile ? 100 : 200);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ─── Watch `listening` — if the browser killed it while user wants it ON, restart ──
-  useEffect(() => {
-    if (!browserSupportsSpeechRecognition) return;
-    if (!userWantsMicOn.current) return;   // User pressed stop — don't restart
-    if (listening) {
-      // Currently running fine — clear restart state
-      isRestartingRef.current = false;
-      clearTimeout(restartTimerRef.current);
-      return;
-    }
-    // listening just went false while user still wants it → trigger restart
-    scheduleRestart();
-  }, [listening, browserSupportsSpeechRecognition, scheduleRestart]);
-
-  // ─── Cleanup on unmount ────────────────────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      clearTimeout(restartTimerRef.current);
-      SpeechRecognition.stopListening().catch(() => { });
-      killStream();
-    };
-  }, [killStream]);
-
-  // ─── start ────────────────────────────────────────────────────────────────
   const start = useCallback(async () => {
-    console.log('🎤 >>> START');
+    console.log('🎤 [Desktop] >>> START');
     if (!browserSupportsSpeechRecognition) {
-      setError('Speech recognition not supported. Please use Chrome or Edge.');
+      setError('Speech recognition not supported. Use Chrome or Edge.');
       return;
     }
-    if (isStarting) return;
+    if (isStarting || listening) return;
 
     setIsStarting(true);
     setError(null);
     resetTranscript();
     userWantsMicOn.current = true;
-    isRestartingRef.current = false;
-    clearTimeout(restartTimerRef.current);
 
     try {
-      // Desktop: grab stream so killStream can turn off the browser mic indicator
-      if (!isMobile) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          streamRef.current = stream;
-          console.log('✅ Desktop stream acquired');
-        } catch (e) {
-          console.warn('⚠️ getUserMedia failed:', e);
-        }
+      // Grab a stream so killStream can turn off the browser mic indicator on close
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
+      } catch (e) {
+        console.warn('⚠️ [Desktop] getUserMedia failed:', e);
       }
-      // Mobile: skip getUserMedia entirely (hardware lock breaks SpeechRecognition)
 
       await SpeechRecognition.startListening({
         continuous: true,
         language: 'en-US',
         interimResults: true,
       });
-      console.log('✅ Listening started');
+      console.log('✅ [Desktop] Listening');
     } catch (err) {
-      console.error('❌ start() failed:', err);
+      console.error('❌ [Desktop] start() failed:', err);
       setError(err.message || 'Failed to start microphone');
       userWantsMicOn.current = false;
     } finally {
       setIsStarting(false);
     }
-  }, [browserSupportsSpeechRecognition, isStarting, resetTranscript]);
+  }, [browserSupportsSpeechRecognition, isStarting, listening, resetTranscript]);
 
-  // ─── stop ─────────────────────────────────────────────────────────────────
   const stop = useCallback(() => {
-    console.log('🛑 >>> STOP');
-    userWantsMicOn.current = false;  // Disables auto-restart
-    isRestartingRef.current = false;
-    clearTimeout(restartTimerRef.current);
+    console.log('🛑 [Desktop] >>> STOP');
+    userWantsMicOn.current = false;
     SpeechRecognition.stopListening();
     resetTranscript();
     setIsStarting(false);
@@ -160,23 +270,13 @@ export function useSpeech(onResult) {
     killStream();
   }, [resetTranscript, killStream]);
 
-  // ─── toggle ───────────────────────────────────────────────────────────────
-  // Toggle uses userWantsMicOn (user intent) NOT `listening` (hardware state).
-  // On mobile these frequently differ because the browser kills the API silently.
   const toggle = useCallback(async () => {
-    if (userWantsMicOn.current) {
-      stop();
-    } else {
-      await start();
-    }
+    if (userWantsMicOn.current) stop();
+    else await start();
   }, [start, stop]);
 
-  // The UI should show "active" whenever the user wants the mic on,
-  // even during the brief restart gap when listening is momentarily false.
-  const uiListening = userWantsMicOn.current ? (listening || isStarting || isRestartingRef.current) : false;
-
   return {
-    listening: uiListening,
+    listening,
     toggle,
     stop,
     supported: browserSupportsSpeechRecognition,
@@ -184,4 +284,13 @@ export function useSpeech(onResult) {
     error,
     isStarting,
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Public hook: routes to the right engine based on platform
+// ─────────────────────────────────────────────────────────────────────────────
+export function useSpeech(onResult) {
+  const mobile = useMobileSpeech(onResult);
+  const desktop = useDesktopSpeech(onResult);
+  return isMobile ? mobile : desktop;
 }
