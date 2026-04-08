@@ -134,7 +134,7 @@ export default function Dashboard() {
             </div> */}
             <div className="hidden sm:flex  gap-1.5">
               <img src={idolizeLogo} alt="Idolize" className="h-5 w-auto opacity-50 opacity-100 hidden md:block" />
-              <span className="font-bold text-slate-900 text-sm  hidden sm:block">IBS Actions</span>
+              <span className="font-bold text-slate-900 text-sm  hidden sm:block">IBS Actions 123</span>
             </div>
             <div className="md:hidden block sm:flex  gap-1.5">
               <span className="font-bold text-slate-900 text-sm   sm:block">IBS</span>
