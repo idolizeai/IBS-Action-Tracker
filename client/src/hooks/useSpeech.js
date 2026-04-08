@@ -318,3 +318,4 @@ export function useSpeech(onResult) {
   const desktop = useDesktopSpeech(onResult);
   return isMobile ? mobile : desktop;
 }
+
