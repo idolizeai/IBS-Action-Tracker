@@ -44,6 +44,15 @@ const updateIBSLead = async (id, updates) => {
 };
 
 const deleteIBSLead = async (id) => {
+    const leadintask = await Task.count({
+    where:{
+  ibs_lead_id: id
+    }
+  })
+  if (leadintask >0) {
+ const err = new Error('Cannot delete IBS Lead with active tasks');
+      err.statusCode = 400;
+      throw err;  }
   const rows = await IBSLead.update({ active: false }, { where: { id } });
   return rows > 0;
 };

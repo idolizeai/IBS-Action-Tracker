@@ -209,9 +209,13 @@ export default function MasterManager({ ibsLeads, customers, onUpdate }) {
     toast.success('Updated');
   }
   async function deleteLead(id) {
-    await api.delete(`/masters/ibs-leads/${id}`);
-    onUpdate('leads', ibsLeads.map(l => l.id === id ? { ...l, active: false } : l));
-    toast.success('Ibs Lead In-Active Successfully');
+    try {
+      await api.delete(`/masters/ibs-leads/${id}`);
+      onUpdate('leads', ibsLeads.map(l => l.id === id ? { ...l, active: false } : l));
+      toast.success('Ibs Lead In-Active Successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to in-active ibs lead');
+    }
   }
   async function addCustomer({ name, is_internal }) {
     const { data } = await api.post('/masters/customers', { name, is_internal });
