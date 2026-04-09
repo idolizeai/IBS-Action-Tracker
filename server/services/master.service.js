@@ -77,8 +77,8 @@ const deleteCustomer = async (id) => {
       customer_id: id
     }
   })
-  if (cusintask >=1) {
- const err = new Error('This customer is already in used with a task');
+  if (cusintask >0) {
+ const err = new Error('Cannot delete customer with active tasks');
       err.statusCode = 400;
       throw err;  }
   const rows = await Customer.update({active:false},{ where: { id } });
