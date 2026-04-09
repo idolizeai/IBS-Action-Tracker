@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { IBSLead, Customer } = require('../models');
+const { IBSLead, Customer, Task } = require('../models');
 
 
 const getIBSLeads = () =>
@@ -71,7 +71,17 @@ const updateCustomer = async (id, updates) => {
 };
 
 const deleteCustomer = async (id) => {
-  const rows = await Customer.update({ where: { id } },{active:false});
+
+  const cusintask = await Task.count({
+    where:{
+      customer_id: id
+    }
+  })
+  if (cusintask >=1) {
+ const err = new Error('This customer is already in used with a task');
+      err.statusCode = 400;
+      throw err;  }
+  const rows = await Customer.update({active:false},{ where: { id } });
   return rows > 0;
 };
 
