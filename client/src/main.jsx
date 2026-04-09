@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
@@ -10,7 +11,8 @@ createRoot(document.getElementById('root')).render(
 );
 
 // Register standalone service worker (no vite-plugin-pwa dependency)
-if ('serviceWorker' in navigator) {
+// Skip on mobile browsers for better compatibility
+if ('serviceWorker' in navigator && !/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((err) => {
       console.error('SW registration failed:', err);

@@ -11,7 +11,7 @@ const generateAccessToken = (user) =>
   jwt.sign(
     { id: user.id, email: user.email, name: user.name, role: user.role, ibs_lead_id: user.ibs_lead_id },
     process.env.JWT_SECRET,
-    { expiresIn: '15m' }
+    { expiresIn: '7d' }
   );
 
 const createRefreshToken = async (userId) => {

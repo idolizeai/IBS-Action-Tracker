@@ -165,7 +165,7 @@ export default function Dashboard() {
           {/* List view */}
           <button onClick={() => navigate('/list')}
             className="btn-ghost p-2 sm:flex sm:items-center sm:gap-1.5 sm:px-3 sm:py-2 sm:rounded-lg text-slate-600 hover:text-slate-900"
-            title="List View">
+            title="List">
             <List size={15} />
             <span className="hidden sm:inline text-sm font-semibold">List</span>
           </button>
