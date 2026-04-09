@@ -146,7 +146,7 @@ export default function Dashboard() {
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="px-2.5 py-0.5 text-xs font-bold bg-red-600 text-white rounded-full shadow-sm"
+              className="px-2.5 py-0.5 text-[0.625rem] md:text-sm font-bold bg-red-600 text-white rounded-full shadow-sm"
             >
               {p0Count} urgent
             </motion.span>

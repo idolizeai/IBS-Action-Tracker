@@ -1,3 +1,0 @@
-✅ Connected to SQL Server successfully
-Connected to SQL Server
-Server running on http://localhost:\\.\pipe\a6dc7166-9b5b-4628-9058-ddf9c50e558c

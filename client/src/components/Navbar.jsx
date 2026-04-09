@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
   { path: '/dashboard', label: 'Dashboard', Icon: LayoutGrid },
-  { path: '/list', label: 'List View', Icon: List },
+  { path: '/list', label: 'List ', Icon: List },
 ];
 
 export default function Navbar({ actions, onSettings, settingsActive }) {
