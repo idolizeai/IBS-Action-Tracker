@@ -224,9 +224,13 @@ export default function MasterManager({ ibsLeads, customers, onUpdate }) {
     toast.success('Updated');
   }
   async function deleteCustomer(id) {
-    await api.delete(`/masters/customers/${id}`);
-    onUpdate('customers', customers.filter(c => c.id !== id));
-    toast.success('Deleted');
+    try {
+      await api.delete(`/masters/customers/${id}`);
+      onUpdate('customers', customers.filter(c => c.id !== id));
+      toast.success('Deleted');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete');
+    }
   }
 
   return (
