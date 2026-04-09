@@ -84,6 +84,7 @@ const deleteCustomer = async (req, res, next) => {
     if (!deleted) return notFound(res, 'Customer not found');
     success(res, { deleted: true });
   } catch (err) {
+    if (err.statusCode) return error(res, err.message, err.statusCode);
     next(err);
   }
 };
