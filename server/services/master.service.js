@@ -71,7 +71,7 @@ const updateCustomer = async (id, updates) => {
 };
 
 const deleteCustomer = async (id) => {
-  const rows = await Customer.update({ where: { id } });
+  const rows = await Customer.update({ where: { id } },{active:false});
   return rows > 0;
 };
 
