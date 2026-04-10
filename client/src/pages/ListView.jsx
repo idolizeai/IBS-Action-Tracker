@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square, User } from 'lucide-react';
+import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square, User, PencilIcon } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
@@ -208,8 +208,8 @@ export default function ListView() {
         <button
           onClick={() => setShowDone(d => !d)}
           className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border font-semibold transition-all ${showDone
-              ? 'bg-green-50 border-green-300 text-green-700'
-              : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+            ? 'bg-green-50 border-green-300 text-green-700'
+            : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
             }`}
         >
           {showDone ? <CheckCheck size={14} /> : <Square size={14} />}
@@ -286,7 +286,7 @@ export default function ListView() {
                                   {PRIO_LABEL[task.priority]?.split(' · ')[0]}
                                 </span>
                                 <span className="text-slate-300">·</span>
-                                
+
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-medium">
                                   {task.function_type}
                                 </span>
@@ -365,11 +365,10 @@ export default function ListView() {
                             <div className="flex items-start gap-3">
                               <button
                                 onClick={() => toggleDone(task)}
-                                className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
-                                  isCollaboratorTask 
-                                    ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
-                                    : 'border-slate-300 hover:border-green-400 bg-white'
-                                }`}
+                                className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${isCollaboratorTask
+                                  ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
+                                  : 'border-slate-300 hover:border-green-400 bg-white'
+                                  }`}
                               />
 
                               <div className="flex-1 min-w-0">
@@ -420,7 +419,7 @@ export default function ListView() {
                                 onClick={() => setEditTask(task)}
                                 className="flex-shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1 rounded-lg hover:bg-blue-50"
                               >
-                                <SlidersHorizontal size={14} />
+                                <PencilIcon size={14} />
                               </button>
                             </div>
                           </motion.div>
@@ -431,8 +430,8 @@ export default function ListView() {
                     {/* Empty group placeholder — always visible so drag targets exist */}
                     {byPriority[p].length === 0 && (
                       <div className={`h-14 rounded-xl border-2 border-dashed flex items-center justify-center transition-all duration-150 ${isOver && draggedTask
-                          ? 'border-blue-400 bg-blue-50'
-                          : 'border-slate-200 bg-slate-50/50'
+                        ? 'border-blue-400 bg-blue-50'
+                        : 'border-slate-200 bg-slate-50/50'
                         }`}>
                         <span className={`text-xs font-medium ${isOver && draggedTask ? 'text-blue-500' : 'text-slate-300'}`}>
                           {isOver && draggedTask ? 'Drop here' : 'Empty'}
