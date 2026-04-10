@@ -123,8 +123,13 @@ export default function ListView() {
   async function toggleDone(task) {
     try {
       const { data } = await api.patch(`/tasks/${task.id}`, { done: !task.done });
-      if (!showDone && data.done) setTasks(ts => ts.filter(t => t.id !== data.id));
-      else setTasks(ts => ts.map(t => t.id === task.id ? data : t));
+      // If the new 'done' state doesn't match the current view filter (Active vs Done), remove it
+      if (showDone !== data.done) {
+        setTasks(ts => ts.filter(t => t.id !== data.id));
+        toast.success(data.done ? 'Task moved to Done Log' : 'Task moved to Active');
+      } else {
+        setTasks(ts => ts.map(t => t.id === task.id ? data : t));
+      }
     } catch {
       toast.error('Failed to update');
     }

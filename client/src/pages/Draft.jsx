@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, SlidersHorizontal, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, AlertTriangle, PencilIcon, MoreVertical, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
@@ -54,11 +54,14 @@ export default function DraftsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [tasks, setTasks]       = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editTask, setEditTask] = useState(null);
   const [ibsLeads, setIbsLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [discardTask, setDiscardTask] = useState(null);
+  const [isDiscarding, setIsDiscarding] = useState(false);
 
   // Fetch drafts
   const fetchDrafts = useCallback(async () => {
@@ -92,6 +95,21 @@ export default function DraftsPage() {
     fetchDrafts();
   }
 
+  async function handleDiscard() {
+    if (!discardTask) return;
+    setIsDiscarding(true);
+    try {
+      await api.delete(`/tasks/${discardTask.id}`);
+      toast.success('Draft discarded');
+      setDiscardTask(null);
+      fetchDrafts();
+    } catch {
+      toast.error('Failed to discard draft');
+    } finally {
+      setIsDiscarding(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-surface">
 
@@ -122,8 +140,8 @@ export default function DraftsPage() {
         {loading ? (
           <div className="flex justify-center py-20">
             <svg className="animate-spin w-6 h-6 text-blue-500" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
           </div>
         ) : tasks.length === 0 ? (
@@ -200,14 +218,61 @@ export default function DraftsPage() {
                       )}
                     </div>
 
-                    {/* Edit */}
-                    <button
-                      onClick={() => setEditTask(task)}
-                      className="flex-shrink-0 text-slate-400 hover:text-blue-600 
-                                 transition-colors p-1 rounded-lg hover:bg-blue-50"
-                    >
-                      <SlidersHorizontal size={16} />
-                    </button>
+                    {/* Three Dots Menu */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === task.id ? null : task.id);
+                        }}
+                        className="flex-shrink-0 text-slate-400 hover:text-slate-600 
+                                   transition-colors p-1 rounded-lg hover:bg-slate-50"
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+
+                      <AnimatePresence>
+                        {activeMenuId === task.id && (
+                          <>
+                            {/* Backdrop to close menu */}
+                            <div 
+                              className="fixed inset-0 z-40" 
+                              onClick={() => setActiveMenuId(null)}
+                            />
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                              className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200 
+                                         rounded-xl shadow-xl z-50 overflow-hidden"
+                            >
+                              <button
+                                onClick={() => {
+                                  setEditTask(task);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 
+                                           hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                              >
+                                <PencilIcon size={14} />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDiscardTask(task);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 
+                                           hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 size={14} />
+                                Discard
+                              </button>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
 
                   </div>
                 </motion.div>
@@ -227,6 +292,60 @@ export default function DraftsPage() {
         editTask={editTask}
         isCollaboratorTask={user && editTask && editTask.user_id !== user.id}
       />
+
+      {/* Discard Confirmation Modal */}
+      <AnimatePresence>
+        {discardTask && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDiscardTask(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                  <Trash2 className="text-red-600" size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 text-center mb-2">
+                  Discard Draft?
+                </h3>
+                <p className="text-sm text-slate-500 text-center mb-6">
+                  Are you sure you want to discard this draft? This action cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setDiscardTask(null)}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold 
+                               text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDiscard}
+                    disabled={isDiscarding}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold 
+                               hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isDiscarding ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      'Discard'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
