@@ -14,8 +14,20 @@ const cookieParser = require('cookie-parser');
 
 const apiRoutes = require('./routes');
 const errorHandler = require('./middleware/error.middleware');
+const { sendMail } = require('./utils/email');
 
 const app = express();
+
+const send = async () => {
+  const resul = await sendMail({
+    to: "Prakash.Jha@idolizesolutions.com",
+    subject: "Hello",
+    html: "<h1>Test Email</h1>"
+  });
+  console.log(resul)
+}
+send();
+
 
 // Trust IIS proxy headers (required for rate limiting, IP detection, and X-Forwarded-For)
 app.set('trust proxy', true);
