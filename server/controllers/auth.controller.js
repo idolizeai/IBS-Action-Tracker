@@ -43,6 +43,7 @@ const register = async (req, res, next) => {
     if (!ibs_lead) {
       return error(res, 'You are not authorized to register', 401);
     }
+    // SECURITY: role is NEVER passed from client — always 'user'
     const { accessToken, refreshToken, user } = await AuthService.register(name, email, password, ibs_lead.id);
     setCookies(res, accessToken, refreshToken);
     return created(res, { user });
