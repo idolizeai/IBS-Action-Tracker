@@ -1,3 +1,6 @@
+// THIS FILE IS DEPRECATED — use auth.routes.js instead
+// Kept for backwards compatibility but role parameter is now IGNORED
+
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -13,9 +16,10 @@ function makeToken(user) {
   );
 }
 
-
+// DEPRECATED: This route accepts a 'role' parameter from the body,
+// but we now FORCE role to 'user' regardless of what the client sends.
 router.post('/register', async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'name, email and password are required' });
   }
@@ -28,7 +32,8 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Email already registered' });
     }
     const hash = await bcrypt.hash(password, 10);
-    const userRole = role === 'admin' ? 'admin' : 'user';
+    // SECURITY: ALWAYS set role to 'user' — NEVER trust client-supplied role
+    const userRole = 'user';
     const result = await pool.request()
       .input('name', sql.NVarChar, name)
       .input('email', sql.NVarChar, email.toLowerCase())
@@ -46,7 +51,6 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -68,7 +72,6 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 router.get('/me', require('../middleware/auth').authMiddleware, async (req, res) => {
   res.json({ user: req.user });
