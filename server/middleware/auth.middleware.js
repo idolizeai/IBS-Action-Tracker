@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { IBSLead } = require('../models');
+const { User } = require('../models');
 const { error } = require('../utils/response');
 
 function authMiddleware(req, res, next) {
@@ -15,8 +15,11 @@ function authMiddleware(req, res, next) {
   }
 }
 
-function adminOnly(req, res, next) {
-  if (req.user?.role !== 'admin') {
+async function adminOnly(req, res, next) {
+  const user = await User.findByPk(req.user.id, {
+    attributes: ['id', 'role']
+  });
+  if (user.dataValues.role !== 'admin') {
     return res.status(403).json({ success: false, error: 'Admin access required' });
   }
   next();

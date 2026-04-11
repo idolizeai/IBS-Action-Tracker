@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Sequelize } = require('sequelize');
 const sequelize = require('../config/database');
 
 const IBSLead = sequelize.define(
@@ -22,6 +22,14 @@ const IBSLead = sequelize.define(
       allowNull: false,
       defaultValue: true,
     },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: Sequelize.literal('GETDATE()'),
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: Sequelize.literal('GETDATE()'),
+    }
   },
   {
     tableName: 'masters_ibs_leads',

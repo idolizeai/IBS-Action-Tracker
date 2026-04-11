@@ -44,15 +44,16 @@ const updateIBSLead = async (id, updates) => {
 };
 
 const deleteIBSLead = async (id) => {
-    const leadintask = await Task.count({
-    where:{
-  ibs_lead_id: id
+  const leadintask = await Task.count({
+    where: {
+      ibs_lead_id: id
     }
   })
-  if (leadintask >0) {
- const err = new Error('Cannot delete IBS Lead with active tasks');
-      err.statusCode = 400;
-      throw err;  }
+  if (leadintask > 0) {
+    const err = new Error('Cannot delete IBS Lead with active tasks');
+    err.statusCode = 400;
+    throw err;
+  }
   const rows = await IBSLead.update({ active: false }, { where: { id } });
   return rows > 0;
 };
@@ -82,15 +83,16 @@ const updateCustomer = async (id, updates) => {
 const deleteCustomer = async (id) => {
 
   const cusintask = await Task.count({
-    where:{
+    where: {
       customer_id: id
     }
   })
-  if (cusintask >0) {
- const err = new Error('Cannot delete customer with active tasks');
-      err.statusCode = 400;
-      throw err;  }
-  const rows = await Customer.update({active:false},{ where: { id } });
+  if (cusintask > 0) {
+    const err = new Error('Cannot delete customer with active tasks');
+    err.statusCode = 400;
+    throw err;
+  }
+  const rows = await Customer.update({ active: false }, { where: { id } });
   return rows > 0;
 };
 
