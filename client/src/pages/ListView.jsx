@@ -130,8 +130,8 @@ export default function ListView() {
       } else {
         setTasks(ts => ts.map(t => t.id === task.id ? data : t));
       }
-    } catch {
-      toast.error('Failed to update');
+    } catch (e) {
+      toast.error(e.response.data.error || 'Failed to update');
     }
   }
 
@@ -255,13 +255,21 @@ export default function ListView() {
                     {group.tasks.map(task => {
                       const prio = task.priority ?? 4;
                       const { card: cardCls } = PRIO_CARD[prio];
+                      const isCollaboratorTask = user && task.user_id !== user.id;
+                      const cardClassName = isCollaboratorTask
+                        ? 'border-indigo-200 border-l-indigo-600 bg-indigo-50'
+                        : cardCls;
+                      const badgeClassName = isCollaboratorTask
+                        ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                        : 'bg-slate-100 text-slate-500 border-slate-200';
+
                       return (
                         <motion.div
                           key={task.id}
                           initial={{ opacity: 0, x: -6 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 6 }}
-                          className={`border rounded-xl border-l-4 p-4 shadow-sm opacity-60 ${cardCls}`}
+                          className={`border rounded-xl border-l-4 p-4 shadow-sm opacity-60 ${cardClassName}`}
                         >
                           <div className="flex items-start gap-3">
                             {/* Done toggle */}
@@ -275,9 +283,27 @@ export default function ListView() {
                             </button>
 
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold leading-snug line-through text-slate-400 break-words min-w-0">
-                                {task.title}
-                              </p>
+                              {/* Title row with Assigned badge */}
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <p className="text-sm font-semibold leading-snug line-through text-slate-400 break-words min-w-0">
+                                  {task.title}
+                                </p>
+                                {isCollaboratorTask && (
+                                  <span className="flex-shrink-0 text-[9px] font-black tracking-widest px-1.5 py-0.5 rounded bg-indigo-600 text-white uppercase shadow-sm opacity-70">
+                                    Assigned
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* FROM: owner line */}
+                              {isCollaboratorTask && (
+                                <div className="flex items-center gap-1 mb-1">
+                                  <User size={10} className="text-indigo-400" />
+                                  <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">
+                                    From: {task.owner_name}
+                                  </span>
+                                </div>
+                              )}
 
                               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                 {/* Priority dot + label */}
@@ -290,8 +316,19 @@ export default function ListView() {
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-medium">
                                   {task.function_type}
                                 </span>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-100 font-medium">
+                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeClassName}`}>
+                                  {task.ibs_lead_name}
+                                </span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeClassName}`}>
                                   {task.customer_name}
+                                </span>
+                                {task.financial_impact !== 'none' && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100 font-medium">
+                                    {FINANCIAL_LABELS[task.financial_impact]}
+                                  </span>
+                                )}
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                  {COMM_LABELS[task.comm_mode]}
                                 </span>
                               </div>
                             </div>
@@ -343,7 +380,7 @@ export default function ListView() {
                         const isCollaboratorTask = user && task.user_id !== user.id;
                         const { card: cardCls, badge: badgeCls } = PRIO_CARD[p];
                         const cardClassName = isCollaboratorTask
-                          ? 'border-indigo-600 border-l-indigo-600 bg-gradient-to-br from-white to-indigo-50/30'
+                          ? 'border-indigo-600 border-l-indigo-600 bg-indigo-50'
                           : cardCls;
                         const badgeClassName = isCollaboratorTask
                           ? 'bg-indigo-50 text-indigo-600 border-indigo-100'

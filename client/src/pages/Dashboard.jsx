@@ -11,7 +11,7 @@ import FilterBar from '../components/FilterBar';
 import AddModal from '../components/AddModal';
 import MasterManager from '../components/MasterManager';
 import { useNotification } from '../hooks/useNotification.jsx';
-import idolizeLogo from '../assets/logo.png';
+import idolizeLogo from '../assets/niyojan-new.png';
 
 const BRAND = '#B91C1C';
 
@@ -135,12 +135,12 @@ export default function Dashboard() {
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 mr-1">
-            <div className="hidden sm:flex  gap-1.5">
-              <img src={idolizeLogo} alt="Idolize" className="h-5 w-auto opacity-50 opacity-100 hidden md:block" />
+            <div className=" sm:flex  gap-1.5">
+              <img src={idolizeLogo} alt="Idolize" className="h-9 w-auto md:w-full" />
             </div>
-            <div className="md:hidden block sm:flex  gap-1.5">
+            {/* <div className="md:hidden block sm:flex  gap-1.5">
               <span className="font-bold text-slate-900 text-sm   sm:block">IBS</span>
-            </div>
+            </div> */}
           </div>
 
           {/* P0 alert badge */}

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import idolizeLogo from '../assets/logo.png';
+import niyojanlogo from '../assets/niyojan.png';
 
 export default function Login() {
   const { login, register } = useAuth();
@@ -40,6 +42,11 @@ export default function Login() {
         <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-indigo-200/30 rounded-full blur-3xl" />
       </div>
 
+
+      <div className='fixed left-2 top-4'>
+        <img src={idolizeLogo} alt="Idolize" className="mx-auto  h-5 w-auto md:h-14" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -48,13 +55,19 @@ export default function Login() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/25 mb-4">
+          {/* <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/25 mb-4">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 11l3 3L22 4" />
               <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
             </svg>
+          </div> */}
+
+
+          <div className="">
+            <img src={niyojanlogo} alt="Idolize" className="mx-auto  h-16 w-auto md:h-full md:w-auto mb-4" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">IBS Action Manager</h1>
+
+          <h1 className="md:text-4xl text-2xl font-bold text-slate-900">IBS Niyojan</h1>
           <p className="text-slate-500 text-sm mt-1">Your priorities, organised.</p>
         </div>
 
@@ -65,8 +78,8 @@ export default function Login() {
               key={m}
               onClick={() => setMode(m)}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 capitalize ${mode === m
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
                 }`}
             >
               {m === 'login' ? 'Sign In' : 'Register'}
