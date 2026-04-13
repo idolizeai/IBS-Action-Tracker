@@ -16,7 +16,7 @@ const PRIO_CLS = {
   4: 'bg-slate-100  text-slate-600  border-slate-300',
 };
 
-const FINANCIAL_LABELS = { very_high: 'Very High $$$', high: 'High $$', moderate: 'Moderate', low: 'Low', none: 'No Impact' };
+const FINANCIAL_LABELS = { very_high: 'Very High $$$', high: 'High $$', moderate: 'Moderate $', low: 'Low $', none: 'No Impact' };
 const COMM_LABELS = { email: 'Email', in_person: 'In-Person', remote_meeting: 'Remote', chat: 'Chat', phone: 'Phone', none: 'None' };
 
 const PRIO_DOT = {
@@ -332,11 +332,25 @@ export default function ListView() {
                                 </span>
                               </div>
                             </div>
+                            <div className="flex flex-col items-center gap-2">
 
-                            {/* Relative time */}
-                            <span className="flex-shrink-0 text-xs text-slate-400 font-medium whitespace-nowrap mt-0.5">
-                              {relativeTime(task.done_at)}
-                            </span>
+                              {/* Relative time */}
+                              <span className="text-xs text-slate-400 font-medium whitespace-nowrap mt-0.5">
+                                {relativeTime(task.done_at)}
+                              </span>
+                              <button
+                                onClick={() => toggleDone(task)}
+                                className={`
+    mt-4 px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-200
+    ${isCollaboratorTask
+                                    ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed opacity-70"
+                                    : "bg-indigo-500 text-white hover:bg-indigo-600 active:scale-95 shadow-sm"}
+  `}
+                              >
+                                Undone
+                              </button>
+                            </div>
+
                           </div>
                         </motion.div>
                       );
