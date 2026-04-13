@@ -26,8 +26,8 @@ const PRIORITY_COLORS = {
 const FINANCIAL_LABELS = {
   very_high: 'Very High $$$',
   high: 'High $$',
-  moderate: 'Moderate',
-  low: 'Low',
+  moderate: 'Moderate $',
+  low: 'Low $',
   none: 'No Impact',
 };
 

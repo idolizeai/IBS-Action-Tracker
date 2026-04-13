@@ -187,7 +187,7 @@ export default function FilterBar({ active, onChange, ibsLeads, customers }) {
         label="Communication"
         value={active.comm_mode}
         onChange={(v) => update("comm_mode", v)}
-        activeClass="bg-pink-600 text-white border-pink-600"
+        activeClass="bg-emerald-600 text-white border-emerald-600"
         options={COMM_OPTS}
       />
 

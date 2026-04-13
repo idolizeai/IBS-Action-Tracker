@@ -8,8 +8,8 @@ import { useAuth } from '../context/AuthContext';
 const FINANCIAL_LABELS = {
   very_high: 'Very High $$$',
   high: 'High $$',
-  moderate: 'Moderate',
-  low: 'Low',
+  moderate: 'Moderate $',
+  low: 'Low $',
   none: 'No Impact',
 };
 
