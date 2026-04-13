@@ -316,10 +316,10 @@ export default function ListView() {
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-medium">
                                   {task.function_type}
                                 </span>
-                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeClassName}`}>
+                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${isCollaboratorTask ? badgeClassName : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
                                   {task.ibs_lead_name}
                                 </span>
-                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeClassName}`}>
+                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${isCollaboratorTask ? badgeClassName : 'bg-violet-100 text-violet-700 border-violet-200'}`}>
                                   {task.customer_name}
                                 </span>
                                 {task.financial_impact !== 'none' && (
@@ -327,7 +327,7 @@ export default function ListView() {
                                     {FINANCIAL_LABELS[task.financial_impact]}
                                   </span>
                                 )}
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-100">
                                   {COMM_LABELS[task.comm_mode]}
                                 </span>
                               </div>
@@ -449,10 +449,10 @@ export default function ListView() {
                                   <span className="text-xs  px-2 py-0.5  rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium">
                                     {task.function_type}
                                   </span>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeClassName}`}>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${isCollaboratorTask ? badgeClassName : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
                                     {task.ibs_lead_name}
                                   </span>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeClassName}`}>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${isCollaboratorTask ? badgeClassName : 'bg-violet-100 text-violet-700 border-violet-200'}`}>
                                     {task.customer_name}
                                   </span>
                                   {task.financial_impact !== 'none' && (

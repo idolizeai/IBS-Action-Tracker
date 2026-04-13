@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutGrid, List, LogOut, User, ChevronDown, Settings } from 'lucide-react';
+import idolizeLogo from '../assets/niyojan-new.png';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
@@ -33,13 +34,7 @@ export default function Navbar({ actions, onSettings, settingsActive }) {
 
         {/* ── Logo ── */}
         <div className="flex items-center gap-2 mr-3 flex-shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 11l3 3L22 4" />
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-            </svg>
-          </div>
-          <span className="font-bold text-slate-900 text-sm hidden sm:block">IBS Actions</span>
+          <img src={idolizeLogo} alt="Idolize" className="h-6 w-auto opacity-100 hidden sm:block" />
         </div>
 
         {/* ── Nav links ── */}

@@ -151,10 +151,10 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
 
         {/* Quick badges */}
         <div className="flex flex-wrap gap-1.5 mt-2 ml-7">
-          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${isCollaboratorTask ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${isCollaboratorTask ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
             {task.ibs_lead_name}
           </span>
-          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${isCollaboratorTask ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${isCollaboratorTask ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-violet-100 text-violet-700 border-violet-200'}`}>
             {task.customer_name}
           </span>
           {task.financial_impact !== 'none' && (
