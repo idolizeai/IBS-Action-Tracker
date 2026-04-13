@@ -2,7 +2,9 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { literal } = require('sequelize');
-const { User, RefreshToken } = require('../models');
+const { User, RefreshToken, IBSLead } = require('../models');
+const { forgotPasswordOtpTemplate, passwordResetSuccessTemplate } = require('../utils/emailtemplate');
+const { sendMail } = require('../utils/email');
 
 const hashToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
@@ -107,4 +109,189 @@ const revokeRefreshToken = async (rawToken) => {
   await RefreshToken.destroy({ where: { token_hash: hashToken(rawToken) } });
 };
 
-module.exports = { register, login, refreshAccessToken, revokeRefreshToken };
+// ─── Constants ────────────────────────────────────────────────────────────────
+const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const BCRYPT_SALT_ROUNDS = 12;             // increased from 10 → 12
+
+const generateSecureOtp = () => {
+  return crypto.randomInt(100_000, 1_000_000);
+};
+
+const getISTTime = (date) => {
+  // Convert to IST (UTC+5:30)
+  const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
+  const year = istDate.getUTCFullYear();
+  const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(istDate.getUTCDate()).padStart(2, '0');
+  const hours = String(istDate.getUTCHours()).padStart(2, '0');
+  const minutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(istDate.getUTCSeconds()).padStart(2, '0');
+  const milliseconds = String(istDate.getUTCMilliseconds()).padStart(3, '0');
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+};
+
+const parseISTTime = (istTimeString) => {
+  // Parse IST formatted string back to Date for comparison
+  // Format: 2026-04-13 16:46:24.223
+  // Convert back to UTC by subtracting 5.5 hours
+  const [datePart, timePart] = istTimeString.split(' ');
+  const [year, month, day] = datePart.split('-');
+  const [hours, minutes, secondsWithMs] = timePart.split(':');
+  const [seconds, milliseconds] = secondsWithMs.split('.');
+
+  // Create UTC date
+  const utcDate = new Date(Date.UTC(
+    parseInt(year),
+    parseInt(month) - 1,
+    parseInt(day),
+    parseInt(hours),
+    parseInt(minutes),
+    parseInt(seconds),
+    parseInt(milliseconds)
+  ));
+
+  return utcDate;
+};
+
+const safeEqual = (a, b) => {
+  const strA = String(a);
+  const strB = String(b);
+  // Both buffers must be the same length for timingSafeEqual
+  if (strA.length !== strB.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(strA), Buffer.from(strB));
+};
+
+const forgetPassword = async (email) => {
+  const normalisedEmail = email.trim().toLowerCase();
+  const ibsLead = await IBSLead.findOne({ where: { email: normalisedEmail } });
+  if (!ibsLead) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  const user = await User.findOne({ where: { email: normalisedEmail } });
+  if (!user) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const otp = generateSecureOtp();
+
+  const otpExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
+  const formattedDate = getISTTime(otpExpiry);
+  console.log(Date.now());
+  await User.update(
+    { otp: String(otp), otp_expiry: formattedDate },
+    { where: { id: user.id } }
+  );
+  console.log("otp", otp)
+  console.log("formattedDate", normalisedEmail)
+  // 6. Send mail
+  const result = await sendMail({
+    to: normalisedEmail,
+    subject: 'Forget Password',
+    html: forgotPasswordOtpTemplate(user.name, otp)
+  });
+
+  console.log("result", result)
+
+  if (result.error) {
+    // Roll back OTP so a stale code isn't sitting on the account
+    await User.update(
+      { otp: null, otp_expiry: null },
+      { where: { id: user.id } }
+    );
+    const err = new Error('Failed to send OTP email');
+    err.statusCode = 502;
+    throw err;
+  }
+
+  return true;
+};
+
+/**
+ * Verifies the OTP (with expiry check) then updates the password.
+ *
+ * All validation that requires DB state lives here; pure-input validation
+ * (format checks, required fields) lives in the controller.
+ */
+const verifyOtpAndUpdatePassword = async (email, otp, newPassword) => {
+  const normalisedEmail = email.trim().toLowerCase();
+
+  // 1. IBSLead gate
+  const ibsLead = await IBSLead.findOne({ where: { email: normalisedEmail } });
+  if (!ibsLead) {
+    const err = new Error('You are not authorised to perform this action');
+    err.statusCode = 401;
+    throw err;
+  }
+
+  // 2. Locate user
+  const user = await User.findOne({ where: { email: normalisedEmail } });
+  if (!user) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // 3. Ensure an OTP was actually issued
+  if (!user.otp || !user.otp_expiry) {
+    const err = new Error('No OTP has been requested for this account');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // 4. Expiry check — compare against current time
+  // otp_expiry is now stored as IST formatted string, parse it for comparison
+  const expiryUTC = parseISTTime(user.otp_expiry);
+  const now = new Date();
+
+  if (now > expiryUTC) {
+    // Invalidate the expired OTP immediately
+    await User.update(
+      { otp: null, otp_expiry: null },
+      { where: { id: user.id } }
+    );
+    const err = new Error('OTP has expired. Please request a new one');
+    err.statusCode = 410; // 410 Gone — clearly communicates expiry
+    throw err;
+  }
+
+  // 5. Constant-time OTP comparison (prevents timing attacks)
+  if (!safeEqual(user.otp, String(otp))) {
+    const err = new Error('Invalid OTP');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // 6. Reject if new password is the same as the current one
+  const isSamePassword = await bcrypt.compare(newPassword, user.password_hash);
+  if (isSamePassword) {
+    const err = new Error('New password must be different from the current password');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // 7. Hash + persist new password; clear OTP in the same atomic update
+  const password_hash = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
+  await User.update(
+    { password_hash, otp: null, otp_expiry: null },
+    { where: { id: user.id } }
+  );
+
+  await sendMail({
+    to: normalisedEmail,
+    subject: 'Password Reset Successful',
+    html: passwordResetSuccessTemplate(user.name)
+  });
+
+  return true;
+};
+
+
+
+
+
+module.exports = { register, login, refreshAccessToken, revokeRefreshToken, forgetPassword, verifyOtpAndUpdatePassword };

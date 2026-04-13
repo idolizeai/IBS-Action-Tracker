@@ -27,6 +27,17 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    otp: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        is: /^[0-9]{6}$/ // exactly 6 digits
+      }
+    },
+    otp_expiry: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     role: {
       type: DataTypes.STRING,
       allowNull: false,

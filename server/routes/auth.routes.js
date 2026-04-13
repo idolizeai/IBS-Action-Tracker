@@ -34,5 +34,7 @@ router.post('/login',    loginLimiter,    AuthController.login);
 router.post('/refresh',  AuthController.refresh);
 router.post('/logout',   AuthController.logout);
 router.get('/me',        authMiddleware,  AuthController.me);
+router.post('/forget-password', AuthController.forgetPassword);
+router.post('/validate-otp', AuthController.verifyOTP);
 
 module.exports = router;
