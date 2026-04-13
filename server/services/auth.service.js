@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { literal } = require('sequelize');
 const { User, RefreshToken } = require('../models');
+const { forgotPasswordOtpTemplate } = require('../utils/emailTemplates');
+const { sendMail } = require('../utils/email');
 
 const hashToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
@@ -107,4 +109,26 @@ const revokeRefreshToken = async (rawToken) => {
   await RefreshToken.destroy({ where: { token_hash: hashToken(rawToken) } });
 };
 
-module.exports = { register, login, refreshAccessToken, revokeRefreshToken };
+
+const forgetPassword = async (email) => {
+  const user = await User.findOne({ where: { email: email.toLowerCase() } });
+  if (!user) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  await User.update({ otp }, { where: { id: user.id } });
+  const result = await sendMail(email, 'Forget Password', forgotPasswordOtpTemplate(user.name, otp));
+  if (result.error) {
+    return false;
+  } else {
+    return true;
+  }
+
+
+}
+
+
+
+module.exports = { register, login, refreshAccessToken, revokeRefreshToken, forgetPassword };

@@ -1,5 +1,6 @@
 const { IBSLead } = require('../models');
 const AuthService = require('../services/auth.service');
+const { forgotPasswordOtpTemplate } = require('../utils/emailTemplates');
 const { success, created, error } = require('../utils/response');
 
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -26,7 +27,7 @@ const setCookies = (res, accessToken, refreshToken) => {
 };
 
 const clearCookies = (res) => {
-  res.clearCookie('access_token',  { path: '/' });
+  res.clearCookie('access_token', { path: '/' });
   res.clearCookie('refresh_token', { path: '/' });
 };
 
@@ -94,6 +95,26 @@ const logout = async (req, res, next) => {
     next(err);
   }
 };
+
+
+const forgetPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return error(res, 'email is required');
+    }
+    const result = await AuthService.forgetPassword(email);
+    if (!result) {
+      return error(res, 'Failed to send OTP');
+    }
+    return success(res, { message: 'OTP sent successfully' });
+  } catch (error) {
+    if (error.statusCode) return error(res, error.message, error.statusCode);
+    next(error);
+  }
+}
+
+
 
 const me = (req, res) => {
   success(res, { user: req.user });
