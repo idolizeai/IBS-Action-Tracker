@@ -42,9 +42,18 @@ export default function Dashboard() {
   const [editTask, setEditTask] = useState(null);
   const [masterOpen, setMasterOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false); // ← slide drawer
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewMode, setViewMode] = useState('kanban');
-  const [filters, setFilters] = useState({ priority: null, ibs_lead: null, customer: null, function_type: null, financial_impact: null });
+
+  // ✅ comm_mode added to filters
+  const [filters, setFilters] = useState({
+    priority: null,
+    ibs_lead: null,
+    customer: null,
+    function_type: null,
+    financial_impact: null,
+    comm_mode: null,
+  });
 
   const [overdueTasks, setOverdueTasks] = useState([]);
 
@@ -65,6 +74,8 @@ export default function Dashboard() {
       if (filters.customer) params.customer_id = filters.customer;
       if (filters.function_type) params.function_type = filters.function_type;
       if (filters.financial_impact) params.financial_impact = filters.financial_impact;
+      if (filters.comm_mode) params.comm_mode = filters.comm_mode;
+
       const { data } = await api.get('/tasks', { params });
       setTasks(data);
     } catch {
@@ -83,7 +94,6 @@ export default function Dashboard() {
       setTasks(ts => ts.filter(t => t.id !== data.id));
     } else {
       setTasks(ts => ts.map(t => t.id === data.id ? { ...t, ...data } : t));
-      // Re-fetch silently to ensure joined names are refreshed
       fetchTasks();
     }
   }
@@ -97,7 +107,6 @@ export default function Dashboard() {
     if (type === 'customers') setCustomers(newList);
   }
 
-  // Close dropdown → open full slide drawer
   function openDrawer() {
     setBellOpen(false);
     setDrawerOpen(true);
@@ -126,15 +135,8 @@ export default function Dashboard() {
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 mr-1">
-            {/* <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 11l3 3L22 4" />
-                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-              </svg>
-            </div> */}
             <div className="hidden sm:flex  gap-1.5">
               <img src={idolizeLogo} alt="Idolize" className="h-5 w-auto opacity-50 opacity-100 hidden md:block" />
-              <span className="font-bold text-slate-900 text-sm  hidden sm:block">IBS Actions</span>
             </div>
             <div className="md:hidden block sm:flex  gap-1.5">
               <span className="font-bold text-slate-900 text-sm   sm:block">IBS</span>
@@ -169,6 +171,7 @@ export default function Dashboard() {
             <List size={15} />
             <span className="hidden sm:inline text-sm font-semibold">List</span>
           </button>
+
           {/* Refresh */}
           <button onClick={fetchTasks} className="btn-ghost p-2" title="Refresh">
             <RefreshCw size={15} className={loading ? 'animate-spin text-blue-600' : ''} />
@@ -189,7 +192,7 @@ export default function Dashboard() {
               )}
             </button>
 
-            {/* Mini dropdown — preview only (max 3 tasks) */}
+            {/* Mini dropdown */}
             <AnimatePresence>
               {bellOpen && (
                 <motion.div
@@ -199,7 +202,6 @@ export default function Dashboard() {
                   transition={{ duration: 0.15 }}
                   className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 sm:w-80 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50"
                 >
-                  {/* Header */}
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Bell size={14} className="text-orange-500" />
@@ -215,8 +217,6 @@ export default function Dashboard() {
                     </button>
                   </div>
 
-                  {/* Preview — first 3 tasks only */}
-                  {/* Preview — ALL tasks, scrollable */}
                   <div className="max-h-72 overflow-y-auto">
                     {overdueTasks.length === 0 ? (
                       <div className="px-4 py-8 text-center">
@@ -253,9 +253,6 @@ export default function Dashboard() {
                     )}
                   </div>
 
-
-
-                  {/* Footer — clicking opens full slide drawer */}
                   {overdueTasks.length > 0 && (
                     <div className="border-t border-slate-100">
                       <button
@@ -366,7 +363,6 @@ export default function Dashboard() {
       <AnimatePresence>
         {drawerOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -376,7 +372,6 @@ export default function Dashboard() {
               onClick={() => setDrawerOpen(false)}
             />
 
-            {/* Drawer */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
@@ -384,7 +379,6 @@ export default function Dashboard() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 flex flex-col"
             >
-              {/* Drawer Header */}
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
                 <div className="flex items-center gap-2">
                   <Bell size={16} className="text-orange-500" />
@@ -403,7 +397,6 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {/* Drawer Body — ALL tasks */}
               <div className="flex-1 overflow-y-auto">
                 {overdueTasks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full pb-16">
@@ -451,7 +444,6 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Drawer Footer */}
               <div className="px-5 py-3 bg-slate-50 border-t border-slate-100">
                 <p className="text-[10px] text-slate-400 text-center font-medium">
                   Click a task to open and edit it
@@ -483,13 +475,13 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Active filter indicator */}
-      {(filters.priority !== null || filters.ibs_lead || filters.customer || filters.function_type || filters.financial_impact) && (
+      {/* ✅ Active filter indicator — comm_mode added to condition and clear */}
+      {(filters.priority !== null || filters.ibs_lead || filters.customer || filters.function_type || filters.financial_impact || filters.comm_mode) && (
         <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex items-center gap-2">
           <span className="text-xs font-semibold text-blue-700">Filtered view</span>
           <span className="text-xs text-blue-500">— showing {tasks.length} tasks</span>
           <button
-            onClick={() => setFilters({ priority: null, ibs_lead: null, customer: null, function_type: null, financial_impact: null })}
+            onClick={() => setFilters({ priority: null, ibs_lead: null, customer: null, function_type: null, financial_impact: null, comm_mode: null })}
             className="ml-auto text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
           >
             <X size={11} /> Clear

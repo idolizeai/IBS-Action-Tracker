@@ -7,8 +7,9 @@ router.use(authMiddleware);
 
 const VALID_PRIORITIES = [0, 1, 2, 3, 4];
 const VALID_FINANCIAL = ['very_high', 'high', 'moderate', 'low', 'none'];
-const VALID_COMM = ['email', 'in_person', 'remote_meeting', 'chat', 'phone', 'none'];
-const VALID_FUNCTIONS = ['HR', 'Admin', 'Lead', 'Sales', 'Solution', 'Proposal', 'Finance', 'Operations', 'Marketing', 'Technical'];
+const VALID_COMM = ['email', 'in_person', 'online', 'chat', 'phone', 'none'];
+const VALID_FUNCTIONS = ['HR','BAU','Solutions','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
+
 
 function validate(body) {
   const { title, priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode } = body;
@@ -25,7 +26,8 @@ function validate(body) {
 router.get('/', async (req, res) => {
   try {
     const pool = await getPool();
-    const { priority, function_type, ibs_lead_id, customer_id, financial_impact, done } = req.query;
+
+    const { priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, done } = req.query;
 
     let query = `
       SELECT t.id, t.title, t.priority, t.function_type,
@@ -59,6 +61,10 @@ router.get('/', async (req, res) => {
     if (financial_impact) {
       query += ' AND t.financial_impact = @financial_impact';
       req2.input('financial_impact', sql.NVarChar, financial_impact);
+    }
+    if (comm_mode) {
+      query += ' AND t.comm_mode = @comm_mode';
+      req2.input('comm_mode', sql.NVarChar, comm_mode);
     }
     if (done === 'true') {
       query += ' AND t.done = 1';
@@ -115,19 +121,18 @@ router.patch('/:id', async (req, res) => {
       .query('SELECT id FROM tasks WHERE id = @id AND user_id = @userId');
     if (!own.recordset.length) return res.status(404).json({ error: 'Task not found' });
 
-    const fields = ['title', 'priority', 'function_type', 'ibs_lead_id', 'customer_id', 'financial_impact', 'comm_mode', 'done'];
     const sets = [];
     const req2 = pool.request()
       .input('id', sql.Int, taskId)
       .input('userId', sql.Int, req.user.id);
 
-    if (req.body.title !== undefined) { sets.push('title = @title'); req2.input('title', sql.NVarChar, req.body.title.trim()); }
-    if (req.body.priority !== undefined) { sets.push('priority = @priority'); req2.input('priority', sql.TinyInt, Number(req.body.priority)); }
-    if (req.body.function_type !== undefined) { sets.push('function_type = @function_type'); req2.input('function_type', sql.NVarChar, req.body.function_type); }
-    if (req.body.ibs_lead_id !== undefined) { sets.push('ibs_lead_id = @ibs_lead_id'); req2.input('ibs_lead_id', sql.Int, Number(req.body.ibs_lead_id)); }
-    if (req.body.customer_id !== undefined) { sets.push('customer_id = @customer_id'); req2.input('customer_id', sql.Int, Number(req.body.customer_id)); }
+    if (req.body.title !== undefined)            { sets.push('title = @title');                       req2.input('title', sql.NVarChar, req.body.title.trim()); }
+    if (req.body.priority !== undefined)         { sets.push('priority = @priority');                 req2.input('priority', sql.TinyInt, Number(req.body.priority)); }
+    if (req.body.function_type !== undefined)    { sets.push('function_type = @function_type');       req2.input('function_type', sql.NVarChar, req.body.function_type); }
+    if (req.body.ibs_lead_id !== undefined)      { sets.push('ibs_lead_id = @ibs_lead_id');           req2.input('ibs_lead_id', sql.Int, Number(req.body.ibs_lead_id)); }
+    if (req.body.customer_id !== undefined)      { sets.push('customer_id = @customer_id');           req2.input('customer_id', sql.Int, Number(req.body.customer_id)); }
     if (req.body.financial_impact !== undefined) { sets.push('financial_impact = @financial_impact'); req2.input('financial_impact', sql.NVarChar, req.body.financial_impact); }
-    if (req.body.comm_mode !== undefined) { sets.push('comm_mode = @comm_mode'); req2.input('comm_mode', sql.NVarChar, req.body.comm_mode); }
+    if (req.body.comm_mode !== undefined)        { sets.push('comm_mode = @comm_mode');               req2.input('comm_mode', sql.NVarChar, req.body.comm_mode); }
     if (req.body.done !== undefined) {
       sets.push('done = @done');
       req2.input('done', sql.Bit, req.body.done ? 1 : 0);

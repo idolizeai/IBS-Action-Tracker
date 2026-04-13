@@ -60,7 +60,7 @@ const QUADRANTS = [
     id: 'q4',
     num: 'P3',
     label: 'Delegate / Weekend',
-    sublabel: 'Urgent · Not Important',
+    sublabel: 'Not Urgent · Not Important',
     action: 'HAND OFF',
     prios: [3],
     headerGrad: 'from-amber-500 to-orange-600',

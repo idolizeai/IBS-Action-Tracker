@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
-const FUNCTIONS = ['HR','Admin','Lead','Sales','Solution','Proposal','Finance','Operations','Marketing','Technical'];
+const FUNCTIONS = [
+  'HR','BAU','Solutions','Proposal','Admin',
+  'Finance','Sales','Marketing','Training','Offerings','Misc'
+];
 
 const FINANCIAL = [
   { value: 'very_high', label: '$$$ Very High' },
@@ -11,6 +14,15 @@ const FINANCIAL = [
   { value: 'none',      label: 'No Impact' },
 ];
 
+const COMM_OPTS = [
+  { value: 'email', label: '📧 Email' },
+  { value: 'in_person', label: '🤝 In-Person' },
+  { value: 'online', label: '💻 Online' },
+  { value: 'chat', label: '💬 Chat' },
+  { value: 'phone', label: '📞 Phone' },
+  { value: 'none', label: 'None' },
+];
+
 // Reusable Dropdown
 function Dropdown({ label, options, value, onChange, activeClass }) {
   const [open, setOpen] = useState(false);
@@ -18,7 +30,6 @@ function Dropdown({ label, options, value, onChange, activeClass }) {
 
   const selected = options.find(o => o.value === value);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e) => {
       if (!ref.current?.contains(e.target)) setOpen(false);
@@ -29,7 +40,6 @@ function Dropdown({ label, options, value, onChange, activeClass }) {
 
   return (
     <div ref={ref} className={`relative ${open ? 'z-50' : 'z-10'}`}>
-      {/* Button */}
       <button
         onClick={() => setOpen(!open)}
         className={`px-3 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-1
@@ -42,7 +52,6 @@ function Dropdown({ label, options, value, onChange, activeClass }) {
         <ChevronDown size={14} />
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="absolute mt-2 bg-white border rounded-lg shadow-lg z-50 min-w-[200px] max-h-64 overflow-y-auto">
           {options.map(opt => (
@@ -72,9 +81,9 @@ export default function FilterBar({ active, onChange, ibsLeads, customers }) {
     !active.ibs_lead &&
     !active.customer &&
     !active.function_type &&
-    !active.financial_impact;
+    !active.financial_impact &&
+    !active.comm_mode;
 
-  // ✅ FIX: allow multiple filters (no reset)
   const update = (key, value) => {
     onChange({
       ...active,
@@ -88,7 +97,8 @@ export default function FilterBar({ active, onChange, ibsLeads, customers }) {
       ibs_lead: null,
       customer: null,
       function_type: null,
-      financial_impact: null
+      financial_impact: null,
+      comm_mode: null
     });
   };
 
@@ -170,6 +180,15 @@ export default function FilterBar({ active, onChange, ibsLeads, customers }) {
         onChange={(v) => update("financial_impact", v)}
         activeClass="bg-orange-600 text-white border-orange-600"
         options={FINANCIAL}
+      />
+
+      {/* Communication */}
+      <Dropdown
+        label="Communication"
+        value={active.comm_mode}
+        onChange={(v) => update("comm_mode", v)}
+        activeClass="bg-pink-600 text-white border-pink-600"
+        options={COMM_OPTS}
       />
 
     </div>

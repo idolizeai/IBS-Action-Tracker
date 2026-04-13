@@ -100,7 +100,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
       onUpdated(data);
       toast.success(`Priority updated to ${destCol.label}`);
     } catch (e) {
-      toast.error('Failed to update priority');
+      toast.error('a colloborator cannot update the task');
       console.error(e);
     } finally {
       setDraggedTask(null);

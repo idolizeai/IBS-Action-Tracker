@@ -6,7 +6,7 @@ import api from '../api/axios';
 import BubbleSelector from './BubbleSelector';
 import { useSpeech } from '../hooks/useSpeech';
 
-const FUNCTIONS = ['HR', 'Admin', 'Lead', 'Sales', 'Solution', 'Proposal', 'Finance', 'Operations', 'Marketing', 'Technical'];
+const FUNCTIONS = ['HR','BAU','Solutions','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
 
 const PRIORITY_OPTS = [
   { value: 0, label: 'P0 · Now', selectedClass: 'bg-red-600    border-red-600    text-white shadow-sm shadow-red-500/30' },
@@ -27,7 +27,7 @@ const FINANCIAL_OPTS = [
 const COMM_OPTS = [
   { value: 'email', label: 'Email' },
   { value: 'in_person', label: 'In-Person' },
-  { value: 'remote_meeting', label: 'Remote Meeting' },
+  { value: 'online', label: 'Online' },
   { value: 'chat', label: 'Chat' },
   { value: 'phone', label: 'Phone' },
   { value: 'none', label: 'None' },

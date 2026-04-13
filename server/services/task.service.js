@@ -40,7 +40,7 @@ const decryptTitle = (stored) => {
 };
 
 const getTasksForUser = async (user, filters = {}) => {
-  const { priority, function_type, ibs_lead_id, customer_id, financial_impact, done, is_draft } = filters;
+  const { priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, done, is_draft } = filters;
 
   let where = {};
 
@@ -62,6 +62,7 @@ const getTasksForUser = async (user, filters = {}) => {
   if (ibs_lead_id) where.ibs_lead_id = Number(ibs_lead_id);
   if (customer_id) where.customer_id = Number(customer_id);
   if (financial_impact) where.financial_impact = financial_impact;
+  if (comm_mode) where.comm_mode = comm_mode;
 
   where.done = (done === 'true');
 
