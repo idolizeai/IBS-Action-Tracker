@@ -6,6 +6,9 @@ const clientId = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const emailUser = process.env.EMAIL_USER;
 
+if (!tenantId || !clientId || !clientSecret || !emailUser) {
+    throw new Error("Missing email configuration");
+}
 // 🔑 Get Access Token
 async function getAccessToken() {
     const tokenEndpoint = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
