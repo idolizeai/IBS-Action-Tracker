@@ -74,7 +74,7 @@ function Dropdown({ label, options, value, onChange, activeClass }) {
   );
 }
 
-export default function FilterBar({ active, onChange, ibsLeads, customers }) {
+export default function FilterBar({ active, onChange, ibsLeads, customers, assignment, onAssignmentChange }) {
 
   const isAll =
     !active.priority &&
@@ -82,7 +82,8 @@ export default function FilterBar({ active, onChange, ibsLeads, customers }) {
     !active.customer &&
     !active.function_type &&
     !active.financial_impact &&
-    !active.comm_mode;
+    !active.comm_mode &&
+    (!assignment || assignment === 'all');
 
   const update = (key, value) => {
     onChange({
@@ -100,6 +101,7 @@ export default function FilterBar({ active, onChange, ibsLeads, customers }) {
       financial_impact: null,
       comm_mode: null
     });
+    if (onAssignmentChange) onAssignmentChange('all');
   };
 
   return (
@@ -116,6 +118,32 @@ export default function FilterBar({ active, onChange, ibsLeads, customers }) {
       >
         All
       </button>
+
+      {/* Assignment filter buttons */}
+      {assignment && onAssignmentChange && (
+        <>
+          <button
+            onClick={() => onAssignmentChange(assignment === 'to_me' ? 'all' : 'to_me')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all
+              ${assignment === 'to_me'
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "bg-white border-slate-200 text-slate-600 hover:border-slate-400"
+              }`}
+          >
+            To Me
+          </button>
+          <button
+            onClick={() => onAssignmentChange(assignment === 'by_me' ? 'all' : 'by_me')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all
+              ${assignment === 'by_me'
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white border-slate-200 text-slate-600 hover:border-slate-400"
+              }`}
+          >
+            By Me
+          </button>
+        </>
+      )}
 
       <div className="h-5 w-px bg-slate-300" />
 

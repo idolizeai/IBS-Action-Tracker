@@ -30,11 +30,11 @@ export default function Navbar({ actions, onSettings, settingsActive }) {
 
   return (
     <nav className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
-      <div className="px-4 h-14 flex items-center gap-2">
+      <div className="px-4 h-16 flex items-center gap-2">
 
         {/* ── Logo ── */}
         <div className="flex items-center gap-2 mr-3 flex-shrink-0">
-          <img src={idolizeLogo} alt="Idolize" className="h-6 w-auto opacity-100 hidden sm:block" />
+          <img src={idolizeLogo} alt="Idolize" className="h-9 w-auto opacity-100" />
         </div>
 
         {/* ── Nav links ── */}

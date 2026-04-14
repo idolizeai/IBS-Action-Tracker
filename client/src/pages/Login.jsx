@@ -73,11 +73,6 @@ export default function Login() {
         <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-indigo-200/30 rounded-full blur-3xl" />
       </div>
 
-
-      <div className='fixed left-2 top-4'>
-        <img src={idolizeLogo} alt="Idolize" className="mx-auto  h-5 w-auto md:h-14" />
-      </div>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -366,6 +361,12 @@ export default function Login() {
             )}
           </AnimatePresence>
         </form>
+
+        <div className="text-center mt-6">
+          <p className="text-xs text-slate-400 font-medium md:text-sm">
+            Powered by <span className="text-slate-600 font-semibold md:font-bold">Idolize Business Solutions</span>
+          </p>
+        </div>
       </motion.div>
     </div>
   );

@@ -54,6 +54,7 @@ export default function Dashboard() {
     financial_impact: null,
     comm_mode: null,
   });
+  const [assignmentFilter, setAssignmentFilter] = useState('all'); // 'all', 'to_me', 'by_me'
 
   const [overdueTasks, setOverdueTasks] = useState([]);
 
@@ -75,6 +76,7 @@ export default function Dashboard() {
       if (filters.function_type) params.function_type = filters.function_type;
       if (filters.financial_impact) params.financial_impact = filters.financial_impact;
       if (filters.comm_mode) params.comm_mode = filters.comm_mode;
+      if (assignmentFilter !== 'all') params.assignment = assignmentFilter;
 
       const { data } = await api.get('/tasks', { params });
       setTasks(data);
@@ -83,7 +85,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, assignmentFilter]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
@@ -317,7 +319,14 @@ export default function Dashboard() {
 
         {/* Filter bar */}
         <div className="px-4 pb-2">
-          <FilterBar active={filters} onChange={setFilters} ibsLeads={ibsLeads} customers={customers} />
+          <FilterBar 
+            active={filters} 
+            onChange={setFilters} 
+            ibsLeads={ibsLeads} 
+            customers={customers} 
+            assignment={assignmentFilter}
+            onAssignmentChange={setAssignmentFilter}
+          />
         </div>
 
         {/* View toggle */}

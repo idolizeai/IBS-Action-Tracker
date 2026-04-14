@@ -40,7 +40,7 @@ const decryptTitle = (stored) => {
 };
 
 const getTasksForUser = async (user, filters = {}) => {
-  const { priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, done, is_draft } = filters;
+  const { priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, done, is_draft, assignment } = filters;
 
   let where = {};
 
@@ -55,6 +55,21 @@ const getTasksForUser = async (user, filters = {}) => {
       [Op.or]: conditions,
       is_draft: false
     };
+
+    // Apply assignment filter
+    if (assignment === 'by_me') {
+      // Only tasks created by current user
+      where = { user_id: user.id, is_draft: false };
+    } else if (assignment === 'to_me') {
+      // Only tasks where user is a collaborator (not the creator)
+      if (user.ibs_lead_id) {
+        where = { ibs_lead_id: user.ibs_lead_id, user_id: { [Op.ne]: user.id }, is_draft: false };
+      } else {
+        // User has no ibs_lead_id, so they can't have tasks assigned to them
+        return [];
+      }
+    }
+    // 'all' uses the default where clause above
   }
 
   if (priority !== undefined && priority !== '') where.priority = Number(priority);

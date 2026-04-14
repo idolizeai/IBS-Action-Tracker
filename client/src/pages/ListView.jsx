@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square, User, PencilIcon } from 'lucide-react';
+import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square, User, PencilIcon, X } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import AddModal from '../components/AddModal';
+import FilterBar from '../components/FilterBar';
 import { useAuth } from '../context/AuthContext';
 
 const PRIO_LABEL = { 0: 'P0 · Do Now', 1: 'P1 · Today', 2: 'P2 · This Week', 3: 'P3 · Weekend', 4: 'P4 · TBD' };
@@ -17,7 +18,7 @@ const PRIO_CLS = {
 };
 
 const FINANCIAL_LABELS = { very_high: 'Very High $$$', high: 'High $$', moderate: 'Moderate $', low: 'Low $', none: 'No Impact' };
-const COMM_LABELS = { email: 'Email', in_person: 'In-Person', remote_meeting: 'Remote', chat: 'Chat', phone: 'Phone', none: 'None' };
+const COMM_LABELS = { email: 'Email', in_person: 'In-Person', online: 'Online', chat: 'Chat', phone: 'Phone', none: 'None' };
 
 const PRIO_DOT = {
   0: 'bg-red-500',
@@ -99,18 +100,36 @@ export default function ListView() {
   const [editTask, setEditTask] = useState(null);
   const [ibsLeads, setIbsLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [filters, setFilters] = useState({
+    priority: null,
+    ibs_lead: null,
+    customer: null,
+    function_type: null,
+    financial_impact: null,
+    comm_mode: null,
+  });
+  const [assignmentFilter, setAssignmentFilter] = useState('all'); // 'all', 'to_me', 'by_me'
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/tasks', { params: { done: showDone } });
+      const params = { done: showDone };
+      if (filters.priority !== null) params.priority = filters.priority;
+      if (filters.ibs_lead) params.ibs_lead_id = filters.ibs_lead;
+      if (filters.customer) params.customer_id = filters.customer;
+      if (filters.function_type) params.function_type = filters.function_type;
+      if (filters.financial_impact) params.financial_impact = filters.financial_impact;
+      if (filters.comm_mode) params.comm_mode = filters.comm_mode;
+      if (assignmentFilter !== 'all') params.assignment = assignmentFilter;
+
+      const { data } = await api.get('/tasks', { params });
       setTasks(data);
     } catch {
       toast.error('Failed to load tasks');
     } finally {
       setLoading(false);
     }
-  }, [showDone]);
+  }, [showDone, filters, assignmentFilter]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
@@ -195,16 +214,20 @@ export default function ListView() {
       {/* Shared Navbar */}
       <Navbar />
 
-      {/* Page sub-header */}
+      {/* Page sub-header with filters */}
       <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
-        <div className="flex-1">
-          <h1 className="text-base font-bold text-slate-900">
-            {showDone ? 'Done Log' : 'Active Tasks'}
-          </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {tasks.length} {showDone ? 'completed' : 'active'} tasks
-          </p>
-        </div>
+        {!showDone && (
+          <div className="flex-1 min-w-0">
+            <FilterBar 
+              active={filters} 
+              onChange={setFilters} 
+              ibsLeads={ibsLeads} 
+              customers={customers}
+              assignment={assignmentFilter}
+              onAssignmentChange={setAssignmentFilter}
+            />
+          </div>
+        )}
         <button
           onClick={() => setShowDone(d => !d)}
           className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border font-semibold transition-all ${showDone
@@ -213,9 +236,79 @@ export default function ListView() {
             }`}
         >
           {showDone ? <CheckCheck size={14} /> : <Square size={14} />}
-          {showDone ? 'Active' : 'Done'}
+          Done
         </button>
       </div>
+
+      {/* Active filter indicators */}
+      {!showDone && Object.values(filters).some(v => v !== null) && (
+        <div className="bg-white border-b border-slate-200 px-4 py-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-blue-600 font-semibold">Filtered view:</span>
+            {filters.priority !== null && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                Priority: {PRIO_LABEL[filters.priority]}
+                <button onClick={() => setFilters(f => ({ ...f, priority: null }))} className="ml-0.5 hover:text-orange-900">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filters.function_type && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
+                Function: {filters.function_type}
+                <button onClick={() => setFilters(f => ({ ...f, function_type: null }))} className="ml-0.5 hover:text-purple-900">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filters.ibs_lead && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                IBS Lead: {ibsLeads.find(l => l.id === filters.ibs_lead)?.name || filters.ibs_lead}
+                <button onClick={() => setFilters(f => ({ ...f, ibs_lead: null }))} className="ml-0.5 hover:text-blue-900">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filters.customer && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 border border-violet-200">
+                Customer: {customers.find(c => c.id === filters.customer)?.name || filters.customer}
+                <button onClick={() => setFilters(f => ({ ...f, customer: null }))} className="ml-0.5 hover:text-violet-900">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filters.financial_impact && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                Fin Impact: {filters.financial_impact.replace('_', ' ')}
+                <button onClick={() => setFilters(f => ({ ...f, financial_impact: null }))} className="ml-0.5 hover:text-orange-900">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filters.comm_mode && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700 border border-teal-200">
+                Communication: {COMM_LABELS[filters.comm_mode]}
+                <button onClick={() => setFilters(f => ({ ...f, comm_mode: null }))} className="ml-0.5 hover:text-teal-900">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={() => setFilters({
+                priority: null,
+                ibs_lead: null,
+                customer: null,
+                function_type: null,
+                financial_impact: null,
+                comm_mode: null,
+              })}
+              className="text-xs text-blue-600 hover:text-blue-800 font-semibold ml-1"
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-3xl mx-auto px-4 py-6">
         {loading ? (
