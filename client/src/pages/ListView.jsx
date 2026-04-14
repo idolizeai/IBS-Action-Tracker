@@ -17,7 +17,7 @@ const PRIO_CLS = {
 };
 
 const FINANCIAL_LABELS = { very_high: 'Very High $$$', high: 'High $$', moderate: 'Moderate $', low: 'Low $', none: 'No Impact' };
-const COMM_LABELS = { email: 'Email', in_person: 'In-Person', remote_meeting: 'Remote', chat: 'Chat', phone: 'Phone', none: 'None' };
+const COMM_LABELS = { email: 'Email', in_person: 'In-Person', online: 'Online', chat: 'Chat', phone: 'Phone', none: 'None' };
 
 const PRIO_DOT = {
   0: 'bg-red-500',

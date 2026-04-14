@@ -42,7 +42,7 @@ const FINANCIAL_COLORS = {
 const COMM_LABELS = {
   email: 'Email',
   in_person: 'In-Person',
-  remote_meeting: 'Remote',
+  online: 'Online',
   chat: 'Chat',
   phone: 'Phone',
   none: 'None',
