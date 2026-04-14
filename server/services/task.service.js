@@ -134,7 +134,7 @@ const updateTask = async (taskId, user, updates) => {
     return null;
   }
 
-  const allowed = ['title', 'priority', 'function_type', 'ibs_lead_id', 'customer_id', 'financial_impact', 'comm_mode', 'done', 'is_draft'];
+  const allowed = ['title', 'priority', 'function_type', 'ibs_lead_id', 'customer_id', 'financial_impact', 'comm_mode', 'done', 'is_draft', 'is_delayed'];
   const patch = {};
 
   for (const field of allowed) {
@@ -151,6 +151,8 @@ const updateTask = async (taskId, user, updates) => {
     else if (field === 'done') {
       patch.done = Boolean(updates.done);
       patch.done_at = updates.done ? literal('GETDATE()') : null;
+    } else if (field === 'is_delayed') {
+      patch.is_delayed = true;
     } else {
       patch[field] = updates[field];
     }

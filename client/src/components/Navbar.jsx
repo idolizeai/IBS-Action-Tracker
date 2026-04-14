@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutGrid, List, LogOut, User, ChevronDown, Settings } from 'lucide-react';
 import idolizeLogo from '../assets/niyojan-new.png';
@@ -33,9 +33,9 @@ export default function Navbar({ actions, onSettings, settingsActive }) {
       <div className="px-4 h-16 flex items-center gap-2">
 
         {/* ── Logo ── */}
-        <div className="flex items-center gap-2 mr-3 flex-shrink-0">
+        <Link to={'/dashboard'} className="flex items-center gap-2 mr-3 flex-shrink-0">
           <img src={idolizeLogo} alt="Idolize" className="h-9 w-auto opacity-100" />
-        </div>
+        </Link>
 
         {/* ── Nav links ── */}
         <div className="flex items-center gap-1">
@@ -46,8 +46,8 @@ export default function Navbar({ actions, onSettings, settingsActive }) {
                 key={path}
                 onClick={() => navigate(path)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-150 ${active
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
                   }`}
               >
                 <Icon size={15} />

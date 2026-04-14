@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square, User, PencilIcon } from 'lucide-react';
+import { CheckSquare, SlidersHorizontal, Clock, CheckCheck, Square, User, PencilIcon, Skull } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
@@ -99,6 +99,8 @@ export default function ListView() {
   const [editTask, setEditTask] = useState(null);
   const [ibsLeads, setIbsLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [delayLoading, setDelayLoading] = useState(false);
+
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -132,6 +134,27 @@ export default function ListView() {
       }
     } catch (e) {
       toast.error(e.response.data.error || 'Failed to update');
+    }
+  }
+  async function delay(task) {
+    console.log("task in delay", task)
+    if (!task) return; // guard
+    if (task.is_delayed) {
+      toast.error('Task is already delayed');
+      return;
+    }
+    try {
+      setDelayLoading(true);
+      const { data } = await api.patch(`/tasks/${task.id}`, { is_delayed: true });
+
+      // ✅ replace onUpdated(data) with this:
+      setTasks(ts => ts.map(t => t.id === data.id ? data : t));
+
+      toast.success('Task marked as delayed ⚠️');
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Failed to delay task');
+    } finally {
+      setDelayLoading(false);
     }
   }
 
@@ -269,19 +292,37 @@ export default function ListView() {
                           initial={{ opacity: 0, x: -6 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 6 }}
-                          className={`border rounded-xl border-l-4 p-4 shadow-sm opacity-60 ${cardClassName}`}
+                          className={`relative border rounded-xl border-l-4 p-4 shadow-sm opacity-60 ${cardClassName}`}
                         >
                           <div className="flex items-start gap-3">
                             {/* Done toggle */}
-                            <button
-                              onClick={() => toggleDone(task)}
-                              className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center transition-all shadow-sm hover:bg-green-600"
-                            >
-                              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
-                                <polyline points="2,6 5,9 10,3" />
-                              </svg>
-                            </button>
+                            <div className="relative flex-shrink-0">
+                              <button
+                                onClick={() => toggleDone(task)}
+                                className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center transition-all shadow-sm hover:bg-green-600"
+                              >
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
+                                  <polyline points="2,6 5,9 10,3" />
+                                </svg>
+                              </button>
 
+                              <button
+                                onClick={(e) => { e.stopPropagation(); delay(task); }} disabled={delayLoading}
+                                className={`
+ absolute  top-7  left-1/2 -translate-x-1/2 
+    flex items-center justify-center p-0.5 rounded-lg transition-all duration-200
+    ${task.is_delayed
+                                    ? ' text-orange-600 shadow-sm ring-1 ring-orange-200'
+                                    : 'text-slate-300 hover:text-orange-500 hover:bg-orange-50'
+                                  }
+  `}
+                              >
+                                <Skull
+                                  size={20}
+                                  className={task.is_delayed ? 'animate-pulse' : ''}
+                                />
+                              </button>
+                            </div>
                             <div className="flex-1 min-w-0">
                               {/* Title row with Assigned badge */}
                               <div className="flex items-center gap-2 mb-0.5">
@@ -408,20 +449,41 @@ export default function ListView() {
                             draggable
                             onDragStart={e => handleDragStart(e, task)}
                             onDragEnd={handleDragEnd}
-                            className={`border rounded-xl border-l-4 p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing
+                            className={`relative border rounded-xl border-l-4 p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing
                               ${draggedTask?.id === task.id ? 'opacity-40 scale-95' : ''}
                               ${cardClassName}
                             `}
                           >
                             <div className="flex items-start gap-3">
-                              <button
-                                onClick={() => toggleDone(task)}
-                                className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${isCollaboratorTask
-                                  ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
-                                  : 'border-slate-300 hover:border-green-400 bg-white'
-                                  }`}
-                              />
 
+                              <div className="relative flex-shrink-0">
+                                <button
+                                  onClick={() => toggleDone(task)}
+                                  className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${isCollaboratorTask
+                                    ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
+                                    : 'border-slate-300 hover:border-green-400 bg-white'
+                                    }`}
+                                />
+
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); delay(task); }}
+                                  disabled={delayLoading}
+
+                                  className={`
+ absolute  top-7  left-1/2 -translate-x-1/2 
+    flex items-center justify-center p-0.5 rounded-lg transition-all duration-200
+    ${task.is_delayed
+                                      ? ' text-orange-600 shadow-sm ring-1 ring-orange-200'
+                                      : 'text-slate-300 hover:text-orange-500 hover:bg-orange-50'
+                                    }
+  `}
+                                >
+                                  <Skull
+                                    size={20}
+                                    className={task.is_delayed ? 'animate-pulse' : ''}
+                                  />
+                                </button>
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                   <p className="text-sm font-semibold leading-snug text-slate-800 break-words min-w-0">
