@@ -62,6 +62,12 @@ const Task = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    is_delayed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+
     // Sequelize.literal('GETDATE()') inlines raw SQL — avoids the tedious driver
     // serializing JS Date as '2026-03-28 +00:00' which MSSQL DATETIME rejects.
     created_at: {

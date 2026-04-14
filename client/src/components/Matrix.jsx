@@ -100,7 +100,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
       onUpdated(data);
       toast.success(`Priority updated to ${destCol.label}`);
     } catch (e) {
-      toast.error('a colloborator cannot update the task');
+      toast.error(e.response.data.message || "Something went wrong");
       console.error(e);
     } finally {
       setDraggedTask(null);
@@ -124,8 +124,8 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, colIndex)}
               className={`rounded-2xl border ${col.bgClass} flex flex-col h-full min-h-0 transition-all duration-200 ${isOverColumn && draggedTask
-                  ? 'bg-opacity-75 shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105'
-                  : ''
+                ? 'bg-opacity-75 shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-105'
+                : ''
                 }`}
             >
               {/* Header — never shrinks */}
@@ -201,8 +201,8 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, colIndex)}
               className={`rounded-2xl border ${col.bgClass} transition-all duration-200 ${isOverColumn && draggedTask
-                  ? 'bg-opacity-75 shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-[1.02]'
-                  : ''
+                ? 'bg-opacity-75 shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-[1.02]'
+                : ''
                 }`}
             >
               <div className="flex items-center gap-2 px-4 py-3 border-b border-black/5">

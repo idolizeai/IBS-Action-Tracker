@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Pencil, Trash2, ChevronDown, User, EyeIcon } from 'lucide-react';
+import { Check, Pencil, Trash2, ChevronDown, User, EyeIcon, Skull } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +35,7 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
   const [expanded, setExpanded] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [delayLoading, setDelayLoading] = useState(false);
 
   const isCollaboratorTask = user && task.user_id !== user.id;
   const isOwnerTask = user && task.user_id === user.id;
@@ -51,6 +52,29 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
       toast.error('Failed to update');
     } finally {
       setToggling(false);
+    }
+  }
+  async function delay() {
+    // 🚫 already delayed → do nothing
+    if (task.is_delayed) {
+      toast.error('Task is already delayed');
+      return;
+    }
+
+    try {
+      setDelayLoading(true);
+
+      const { data } = await api.patch(`/tasks/${task.id}`, {
+        is_delayed: true, // ✅ always true (no toggle)
+      });
+
+      onUpdated(data);
+
+      toast.success('Task marked as delayed ⚠️');
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Failed to delay task');
+    } finally {
+      setDelayLoading(false);
     }
   }
 
@@ -77,6 +101,7 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
       transition={{ duration: 0.2 }}
       onClick={() => setExpanded(e => !e)}
       className={`
+        relative 
         bg-white border rounded-xl border-l-4 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer
         ${isCollaboratorTask
           ? 'border-indigo-600 border-l-indigo-600 bg-gradient-to-br from-white to-indigo-50/30'
@@ -87,27 +112,91 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
     >
       <div className="p-3">
         <div className="flex items-start gap-2.5">
-          <button
-            onClick={e => { e.stopPropagation(); toggleDone(); }}
-            disabled={toggling}
-            className={`
-              flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center
-              transition-all duration-150 shadow-sm
-              ${task.done
-                ? 'bg-green-500 border-green-500'
-                : isCollaboratorTask
-                  ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
-                  : 'border-slate-300 hover:border-green-400 hover:bg-green-50 bg-white'
-              }
-            `}
-          >
-            <Check
-              size={10}
-              strokeWidth={3}
-              className={task.done ? 'text-white' : 'text-slate-300 group-hover:text-green-400'}
-            />
-          </button>
+          {/* <div className="relative flex-shrink-0">
+            <button
+              onClick={e => { e.stopPropagation(); toggleDone(); }}
+              disabled={toggling}
+              className={`
+      mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center
+      transition-all duration-150 shadow-sm
+      ${task.done
+                  ? 'bg-green-500 border-green-500'
+                  : isCollaboratorTask
+                    ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
+                    : 'border-slate-300 hover:border-green-400 hover:bg-green-50 bg-white'
+                }
+    `}
+            >
+              <Check
+                size={10}
+                strokeWidth={3}
+                className={task.done ? 'text-white' : 'text-slate-300'}
+              />
+            </button>
 
+
+            <button
+              onClick={e => { e.stopPropagation(); delay(); }}
+              disabled={task.is_delayed || delayLoading}
+              className={`
+
+    flex items-center justify-center p-0.5 rounded-lg transition-all duration-200
+    ${task.is_delayed
+                  ? ' text-orange-600 shadow-sm ring-1 ring-orange-200'
+                  : 'text-slate-300 hover:text-orange-500 hover:bg-orange-50'
+                }
+  `}
+            >
+              <Skull
+                size={20}
+                className={task.is_delayed ? 'animate-pulse' : ''}
+              />
+            </button>
+
+          </div> */}
+
+          <div className="relative flex-shrink-0">
+            {/* Checkbox */}
+            <button
+              onClick={e => { e.stopPropagation(); toggleDone(); }}
+              disabled={toggling}
+              className={`
+      mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center
+      transition-all duration-150 shadow-sm
+      ${task.done
+                  ? 'bg-green-500 border-green-500'
+                  : isCollaboratorTask
+                    ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
+                    : 'border-slate-300 hover:border-green-400 hover:bg-green-50 bg-white'
+                }
+    `}
+            >
+              <Check
+                size={10}
+                strokeWidth={3}
+                className={task.done ? 'text-white' : 'text-slate-300'}
+              />
+            </button>
+
+            <button
+              onClick={e => { e.stopPropagation(); delay(); }}
+              disabled={delayLoading}
+              className={`
+ absolute  top-7  left-1/2 -translate-x-1/2 
+    flex items-center justify-center p-0.5 rounded-lg transition-all duration-200
+    ${task.is_delayed
+                  ? ' text-orange-600 shadow-sm ring-1 ring-orange-200'
+                  : 'text-slate-300 hover:text-orange-500 hover:bg-orange-50'
+                }
+  `}
+            >
+              <Skull
+                size={20}
+                className={task.is_delayed ? 'animate-pulse' : ''}
+              />
+            </button>
+
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <p
