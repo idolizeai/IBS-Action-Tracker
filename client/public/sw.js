@@ -1,4 +1,4 @@
-const CACHE_NAME = `Niyojan-${__BUILD_ID__}`;
+const CACHE_NAME = `Niyojan-v1`;
 
 self.addEventListener('install', (event) => {
   // Don't pre-cache during install — avoids fetch errors in dev mode

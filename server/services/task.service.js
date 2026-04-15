@@ -78,11 +78,15 @@ const getTasksForUser = async (user, filters = {}) => {
   if (customer_id) where.customer_id = Number(customer_id);
   if (financial_impact) where.financial_impact = financial_impact;
   if (comm_mode) where.comm_mode = comm_mode;
-  if (is_delayed == 'true' || is_delayed == true || is_delayed == 1) {
+  if (is_delayed === 'true' || is_delayed === true || is_delayed === 1) {
     where.is_delayed = true;
-    where[Op.or] = [
-      { priority: 0 },
-      { priority: 1 }
+    where[Op.and] = [
+      {
+        [Op.or]: [
+          { priority: 0 },
+          { priority: 1 }
+        ]
+      }
     ];
   }
 
