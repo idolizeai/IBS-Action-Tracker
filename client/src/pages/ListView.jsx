@@ -93,6 +93,14 @@ function groupByPeriod(tasks) {
 }
 
 export default function ListView() {
+  const [filters, setFilters] = useState({
+    priority: null,
+    ibs_lead: null,
+    customer: null,
+    function_type: null,
+    financial_impact: null,
+    comm_mode: null,
+  });
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +108,9 @@ export default function ListView() {
   const [editTask, setEditTask] = useState(null);
   const [ibsLeads, setIbsLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
+    const [delayLoading, setDelayLoading] = useState(false);
 
+const [assignmentFilter, setAssignmentFilter] = useState('all')
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
@@ -147,10 +157,10 @@ export default function ListView() {
   async function delay(task) {
     console.log("task in delay", task)
     if (!task) return; // guard
-    if (task.is_delayed) {
-      toast.error('Task is already delayed');
-      return;
-    }
+    // if (task.is_delayed) {
+    //   toast.error('Task is already delayed');
+    //   return;
+    // }
     try {
       setDelayLoading(true);
       const { data } = await api.patch(`/tasks/${task.id}`, { is_delayed: true });

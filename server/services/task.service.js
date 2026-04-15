@@ -167,7 +167,13 @@ const updateTask = async (taskId, user, updates) => {
       patch.done = Boolean(updates.done);
       patch.done_at = updates.done ? literal('GETDATE()') : null;
     } else if (field === 'is_delayed') {
+      if(task.is_delayed === 1) {
+        const err = new Error('A task is already delayed');
+      err.statusCode = 403;
+      throw err;
+      }
       patch.is_delayed = true;
+      
     } else {
       patch[field] = updates[field];
     }
