@@ -53,6 +53,7 @@ export default function Dashboard() {
     function_type: null,
     financial_impact: null,
     comm_mode: null,
+    is_delayed: null,
   });
   const [assignmentFilter, setAssignmentFilter] = useState('all'); // 'all', 'to_me', 'by_me'
 
@@ -77,6 +78,7 @@ export default function Dashboard() {
       if (filters.financial_impact) params.financial_impact = filters.financial_impact;
       if (filters.comm_mode) params.comm_mode = filters.comm_mode;
       if (assignmentFilter !== 'all') params.assignment = assignmentFilter;
+      if (filters.is_delayed) params.is_delayed = filters.is_delayed;
 
       const { data } = await api.get('/tasks', { params });
       setTasks(data);
@@ -138,7 +140,7 @@ export default function Dashboard() {
           {/* Logo */}
           <div className="flex items-center gap-2.5 mr-1">
             <div className=" sm:flex  gap-1.5">
-              <img src={idolizeLogo} alt="Idolize" className="h-9 w-auto md:w-full" />
+              <img src={idolizeLogo} alt="Idolize" className="h-9 w-16 md:w-full" />
             </div>
             {/* <div className="md:hidden block sm:flex  gap-1.5">
               <span className="font-bold text-slate-900 text-sm   sm:block">IBS</span>
@@ -150,7 +152,7 @@ export default function Dashboard() {
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="px-2.5 py-0.5 text-[0.625rem] md:text-sm font-bold bg-red-600 text-white rounded-full shadow-sm"
+              className="px-1.5 md:px-2.5 py-0.5 text-[0.625rem] md:text-sm font-bold bg-red-600 text-white rounded-full shadow-sm"
             >
               {p0Count} urgent
             </motion.span>
@@ -319,11 +321,11 @@ export default function Dashboard() {
 
         {/* Filter bar */}
         <div className="px-4 pb-2">
-          <FilterBar 
-            active={filters} 
-            onChange={setFilters} 
-            ibsLeads={ibsLeads} 
-            customers={customers} 
+          <FilterBar
+            active={filters}
+            onChange={setFilters}
+            ibsLeads={ibsLeads}
+            customers={customers}
             assignment={assignmentFilter}
             onAssignmentChange={setAssignmentFilter}
           />

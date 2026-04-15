@@ -100,7 +100,7 @@ export default function Matrix({ tasks, onUpdated, onDeleted, onEdit }) {
       onUpdated(data);
       toast.success(`Priority updated to ${destCol.label}`);
     } catch (e) {
-      toast.error(e.response.data.message || "Something went wrong");
+      toast.error(e.response.data.error || "Something went wrong");
       console.error(e);
     } finally {
       setDraggedTask(null);

@@ -48,8 +48,8 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
       });
       onUpdated(data);
       toast.success(data.done ? 'Done ✓' : 'Reopened');
-    } catch {
-      toast.error('Failed to update');
+    } catch (e) {
+      toast.error(e?.response?.data?.error || 'Failed to update');
     } finally {
       setToggling(false);
     }
@@ -166,8 +166,8 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
       ${task.done
                   ? 'bg-green-500 border-green-500'
                   : isCollaboratorTask
-                    ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
-                    : 'border-slate-300 hover:border-green-400 hover:bg-green-50 bg-white'
+                    ? 'border-indigo-300 sm:hover:border-green-400 sm:hover:bg-green-50 active:border-green-400 active:bg-green-50 bg-white'
+                    : 'border-slate-300 sm:hover:border-green-400 sm:hover:bg-green-50 active:border-green-400 active:bg-green-50 bg-white'
                 }
     `}
             >
@@ -186,7 +186,7 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
     flex items-center justify-center p-0.5 rounded-lg transition-all duration-200
     ${task.is_delayed
                   ? ' text-orange-600 shadow-sm ring-1 ring-orange-200'
-                  : 'text-slate-300 hover:text-orange-500 hover:bg-orange-50'
+                  : 'text-slate-300 sm:hover:text-orange-500 sm:hover:bg-orange-50 active:text-orange-500 active:bg-orange-50'
                 }
   `}
             >

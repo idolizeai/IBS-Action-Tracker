@@ -2,16 +2,16 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
 const FUNCTIONS = [
-  'HR','BAU','Solutions','Proposal','Admin',
-  'Finance','Sales','Marketing','Training','Offerings','Misc'
+  'HR', 'BAU', 'Solutions', 'Proposal', 'Admin',
+  'Finance', 'Sales', 'Marketing', 'Training', 'Offerings', 'Misc'
 ];
 
 const FINANCIAL = [
   { value: 'very_high', label: '$$$ Very High' },
-  { value: 'high',      label: '$$ High' },
-  { value: 'moderate',  label: '$ Moderate' },
-  { value: 'low',       label: 'Low' },
-  { value: 'none',      label: 'No Impact' },
+  { value: 'high', label: '$$ High' },
+  { value: 'moderate', label: '$ Moderate' },
+  { value: 'low', label: 'Low' },
+  { value: 'none', label: 'No Impact' },
 ];
 
 const COMM_OPTS = [
@@ -83,6 +83,7 @@ export default function FilterBar({ active, onChange, ibsLeads, customers, assig
     !active.function_type &&
     !active.financial_impact &&
     !active.comm_mode &&
+    !active.is_delayed &&
     (!assignment || assignment === 'all');
 
   const update = (key, value) => {
@@ -99,7 +100,8 @@ export default function FilterBar({ active, onChange, ibsLeads, customers, assig
       customer: null,
       function_type: null,
       financial_impact: null,
-      comm_mode: null
+      comm_mode: null,
+      is_delayed: null,
     });
     if (onAssignmentChange) onAssignmentChange('all');
   };
@@ -218,6 +220,31 @@ export default function FilterBar({ active, onChange, ibsLeads, customers, assig
         activeClass="bg-emerald-600 text-white border-emerald-600"
         options={COMM_OPTS}
       />
+
+
+      {/* Is Delayed */}
+      {/* <Dropdown
+        label="Is Delayed"
+        value={active.is_delayed}
+        onChange={(v) => update("is_delayed", v)}
+        activeClass="bg-red-600 text-white border-red-600"
+        options={[
+          { value: true, label: "Yes" },
+          { value: false, label: "No" },
+        ]}
+      /> */}
+
+      <button
+        onClick={() => update("is_delayed", true)}
+
+        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all
+          ${active.is_delayed
+            ? "bg-orange-500 text-white border-orange-600"
+            : "bg-white border-slate-200 text-slate-600 hover:border-slate-400"
+          }`}
+      >
+        Is Delayed
+      </button>
 
     </div>
   );

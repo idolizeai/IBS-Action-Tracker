@@ -100,6 +100,7 @@ export default function ListView() {
     function_type: null,
     financial_impact: null,
     comm_mode: null,
+    is_delayed: null,
   });
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
@@ -108,9 +109,9 @@ export default function ListView() {
   const [editTask, setEditTask] = useState(null);
   const [ibsLeads, setIbsLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
-    const [delayLoading, setDelayLoading] = useState(false);
+  const [delayLoading, setDelayLoading] = useState(false);
 
-const [assignmentFilter, setAssignmentFilter] = useState('all')
+  const [assignmentFilter, setAssignmentFilter] = useState('all')
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
@@ -121,6 +122,7 @@ const [assignmentFilter, setAssignmentFilter] = useState('all')
       if (filters.function_type) params.function_type = filters.function_type;
       if (filters.financial_impact) params.financial_impact = filters.financial_impact;
       if (filters.comm_mode) params.comm_mode = filters.comm_mode;
+      if (filters.is_delayed) params.is_delayed = filters.is_delayed;
       if (assignmentFilter !== 'all') params.assignment = assignmentFilter;
 
       const { data } = await api.get('/tasks', { params });
@@ -240,10 +242,10 @@ const [assignmentFilter, setAssignmentFilter] = useState('all')
       <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
         {!showDone && (
           <div className="flex-1 min-w-0">
-            <FilterBar 
-              active={filters} 
-              onChange={setFilters} 
-              ibsLeads={ibsLeads} 
+            <FilterBar
+              active={filters}
+              onChange={setFilters}
+              ibsLeads={ibsLeads}
               customers={customers}
               assignment={assignmentFilter}
               onAssignmentChange={setAssignmentFilter}
@@ -311,6 +313,14 @@ const [assignmentFilter, setAssignmentFilter] = useState('all')
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700 border border-teal-200">
                 Communication: {COMM_LABELS[filters.comm_mode]}
                 <button onClick={() => setFilters(f => ({ ...f, comm_mode: null }))} className="ml-0.5 hover:text-teal-900">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filters.is_delayed && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                Delayed
+                <button onClick={() => setFilters(f => ({ ...f, is_delayed: null }))} className="ml-0.5 hover:text-orange-900">
                   <X size={12} />
                 </button>
               </span>
@@ -391,7 +401,7 @@ const [assignmentFilter, setAssignmentFilter] = useState('all')
                             <div className="relative flex-shrink-0">
                               <button
                                 onClick={() => toggleDone(task)}
-                                className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center transition-all shadow-sm hover:bg-green-600"
+                                className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 flex items-center justify-center transition-all shadow-sm sm:hover:bg-green-600 active:bg-green-600"
                               >
                                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
                                   <polyline points="2,6 5,9 10,3" />
@@ -405,7 +415,7 @@ const [assignmentFilter, setAssignmentFilter] = useState('all')
     flex items-center justify-center p-0.5 rounded-lg transition-all duration-200
     ${task.is_delayed
                                     ? ' text-orange-600 shadow-sm ring-1 ring-orange-200'
-                                    : 'text-slate-300 hover:text-orange-500 hover:bg-orange-50'
+                                    : 'text-slate-300 sm:hover:text-orange-500 sm:hover:bg-orange-50 active:text-orange-500 active:bg-orange-50'
                                   }
   `}
                               >
@@ -477,7 +487,7 @@ const [assignmentFilter, setAssignmentFilter] = useState('all')
     mt-4 px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-200
     ${isCollaboratorTask
                                     ? "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed opacity-70"
-                                    : "bg-indigo-500 text-white hover:bg-indigo-600 active:scale-95 shadow-sm"}
+                                    : "bg-indigo-500 text-white sm:hover:bg-indigo-600 active:bg-indigo-600 active:scale-95 shadow-sm"}
   `}
                               >
                                 Undone
@@ -552,8 +562,8 @@ const [assignmentFilter, setAssignmentFilter] = useState('all')
                                 <button
                                   onClick={() => toggleDone(task)}
                                   className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${isCollaboratorTask
-                                    ? 'border-indigo-300 hover:border-green-400 hover:bg-green-50 bg-white'
-                                    : 'border-slate-300 hover:border-green-400 bg-white'
+                                    ? 'border-indigo-300 sm:hover:border-green-400 sm:hover:bg-green-50 active:border-green-400 active:bg-green-50 bg-white'
+                                    : 'border-slate-300 sm:hover:border-green-400 sm:hover:bg-green-50 active:border-green-400 active:bg-green-50 bg-white'
                                     }`}
                                 />
 
@@ -566,7 +576,7 @@ const [assignmentFilter, setAssignmentFilter] = useState('all')
     flex items-center justify-center p-0.5 rounded-lg transition-all duration-200
     ${task.is_delayed
                                       ? ' text-orange-600 shadow-sm ring-1 ring-orange-200'
-                                      : 'text-slate-300 hover:text-orange-500 hover:bg-orange-50'
+                                      : 'text-slate-300 sm:hover:text-orange-500 sm:hover:bg-orange-50 active:text-orange-500 active:bg-orange-50'
                                     }
   `}
                                 >

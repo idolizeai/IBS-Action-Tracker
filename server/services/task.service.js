@@ -40,7 +40,7 @@ const decryptTitle = (stored) => {
 };
 
 const getTasksForUser = async (user, filters = {}) => {
-  const { priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, done, is_draft, assignment } = filters;
+  const { priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, done, is_draft, assignment, is_delayed } = filters;
 
   let where = {};
 
@@ -78,6 +78,14 @@ const getTasksForUser = async (user, filters = {}) => {
   if (customer_id) where.customer_id = Number(customer_id);
   if (financial_impact) where.financial_impact = financial_impact;
   if (comm_mode) where.comm_mode = comm_mode;
+  if (is_delayed == 'true' || is_delayed == true || is_delayed == 1) {
+    where.is_delayed = true;
+    where[Op.or] = [
+      { priority: 0 },
+      { priority: 1 }
+    ];
+  }
+
 
   where.done = (done === 'true');
 
@@ -167,13 +175,15 @@ const updateTask = async (taskId, user, updates) => {
       patch.done = Boolean(updates.done);
       patch.done_at = updates.done ? literal('GETDATE()') : null;
     } else if (field === 'is_delayed') {
-      if(task.is_delayed === 1) {
+      if (task.is_delayed === true || task.is_delayed === 1) {
         const err = new Error('A task is already delayed');
-      err.statusCode = 403;
-      throw err;
+        err.statusCode = 400;
+        throw err;
       }
+
+
       patch.is_delayed = true;
-      
+
     } else {
       patch[field] = updates[field];
     }
