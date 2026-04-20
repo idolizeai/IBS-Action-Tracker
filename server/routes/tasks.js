@@ -8,7 +8,7 @@ router.use(authMiddleware);
 const VALID_PRIORITIES = [0, 1, 2, 3, 4];
 const VALID_FINANCIAL = ['very_high', 'high', 'moderate', 'low', 'none'];
 const VALID_COMM = ['email', 'in_person', 'online', 'chat', 'phone', 'none'];
-const VALID_FUNCTIONS = ['HR','BAU','Solutions','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
+const VALID_FUNCTIONS = ['HR','BAU','Solutions','Planning','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
 
 
 function validate(body) {

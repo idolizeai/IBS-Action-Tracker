@@ -6,7 +6,7 @@ import api from '../api/axios';
 import BubbleSelector from './BubbleSelector';
 import { useSpeech } from '../hooks/useSpeech';
 
-const FUNCTIONS = ['HR','BAU','Solutions','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
+const FUNCTIONS = ['HR','BAU','Solutions','Planning','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
 
 const PRIORITY_OPTS = [
   { value: 0, label: 'P0 · Now', selectedClass: 'bg-red-600    border-red-600    text-white shadow-sm shadow-red-500/30' },

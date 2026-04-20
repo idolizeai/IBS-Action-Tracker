@@ -4,7 +4,7 @@ const FINANCIAL_IMPACT = ['very_high', 'high', 'moderate', 'low', 'none'];
 
 const COMM_MODES = ['email', 'in_person', 'online', 'chat', 'phone', 'none'];
 
-const FUNCTION_TYPES = ['HR','BAU','Solutions','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
+const FUNCTION_TYPES = ['HR','BAU','Solutions','Planning','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
 
 const ROLES = ['user', 'admin'];
 

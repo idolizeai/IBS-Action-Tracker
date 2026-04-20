@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
 const FUNCTIONS = [
-  'HR', 'BAU', 'Solutions', 'Proposal', 'Admin',
+  'HR', 'BAU', 'Solutions','Planning', 'Proposal', 'Admin',
   'Finance', 'Sales', 'Marketing', 'Training', 'Offerings', 'Misc'
 ];
 
