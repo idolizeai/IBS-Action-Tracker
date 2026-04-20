@@ -152,30 +152,89 @@ const updateTask = async (taskId, user, updates) => {
   const task = await Task.findByPk(taskId);
   if (!task) return null;
 
+  // ── Non-owner path ──────────────────────────────────────────────────────────
   if (task.user_id !== user.id) {
+    // Fetch the full user record to check role
+    const dbUser = await User.findByPk(user.id);
+    if (!dbUser) {
+      const err = new Error('User not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // ── ADMIN: may ONLY update `priority` ────────────────────────────────────
+    if (dbUser.role === 'admin') {
+      // Check that the request contains ONLY the `priority` field
+      const requestedKeys = Object.keys(updates);
+      const hasOnlyPriority =
+        requestedKeys.length === 1 && requestedKeys[0] === 'priority';
+
+      if (!hasOnlyPriority) {
+        const err = new Error(
+          'As an admin assigned to this task you can only update the priority field'
+        );
+        err.statusCode = 403;
+        throw err;
+      }
+
+      // Validate priority value
+      const priorityVal = updates.priority;
+      if (
+        priorityVal === undefined ||
+        priorityVal === null ||
+        !Number.isFinite(Number(priorityVal))
+      ) {
+        const err = new Error('priority must be a valid number');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      await task.update({
+        priority: Number(priorityVal),
+        updated_at: literal('GETDATE()'),
+      });
+      await task.reload({ include: TASK_INCLUDE });
+      return flattenTask(task);
+    }
+
+    // ── COLLABORATOR: blocked entirely ────────────────────────────────────────
     if (user.ibs_lead_id && task.ibs_lead_id === user.ibs_lead_id) {
-      const err = new Error('a colloborator cannot update the task');
+      const err = new Error('A collaborator cannot update the task');
       err.statusCode = 403;
       throw err;
     }
+
+    // Task doesn't belong to this user and they are not an admin or collaborator
     return null;
   }
 
-  const allowed = ['title', 'priority', 'function_type', 'ibs_lead_id', 'customer_id', 'financial_impact', 'comm_mode', 'done', 'is_draft', 'is_delayed'];
+  // ── Owner path ──────────────────────────────────────────────────────────────
+  const allowed = [
+    'title', 'priority', 'function_type', 'ibs_lead_id', 'customer_id',
+    'financial_impact', 'comm_mode', 'done', 'is_draft', 'is_delayed',
+  ];
   const patch = {};
 
   for (const field of allowed) {
     if (updates[field] === undefined) continue;
 
-    if (field === 'title') patch.title = encryptTitle(updates.title.trim());
-    else if (field === 'priority') patch.priority = updates.priority != null ? Number(updates.priority) : null;
-    else if (field === 'ibs_lead_id') patch.ibs_lead_id = updates.ibs_lead_id ? Number(updates.ibs_lead_id) : null;
-    else if (field === 'customer_id') patch.customer_id = updates.customer_id ? Number(updates.customer_id) : null;
-    else if (field === 'function_type') patch.function_type = updates.function_type || null;
-    else if (field === 'financial_impact') patch.financial_impact = updates.financial_impact || null;
-    else if (field === 'comm_mode') patch.comm_mode = updates.comm_mode || null;
-    else if (field === 'is_draft') patch.is_draft = Boolean(updates.is_draft);
-    else if (field === 'done') {
+    if (field === 'title') {
+      patch.title = encryptTitle(updates.title.trim());
+    } else if (field === 'priority') {
+      patch.priority = updates.priority != null ? Number(updates.priority) : null;
+    } else if (field === 'ibs_lead_id') {
+      patch.ibs_lead_id = updates.ibs_lead_id ? Number(updates.ibs_lead_id) : null;
+    } else if (field === 'customer_id') {
+      patch.customer_id = updates.customer_id ? Number(updates.customer_id) : null;
+    } else if (field === 'function_type') {
+      patch.function_type = updates.function_type || null;
+    } else if (field === 'financial_impact') {
+      patch.financial_impact = updates.financial_impact || null;
+    } else if (field === 'comm_mode') {
+      patch.comm_mode = updates.comm_mode || null;
+    } else if (field === 'is_draft') {
+      patch.is_draft = Boolean(updates.is_draft);
+    } else if (field === 'done') {
       patch.done = Boolean(updates.done);
       patch.done_at = updates.done ? literal('GETDATE()') : null;
     } else if (field === 'is_delayed') {
@@ -184,10 +243,7 @@ const updateTask = async (taskId, user, updates) => {
         err.statusCode = 400;
         throw err;
       }
-
-
       patch.is_delayed = true;
-
     } else {
       patch[field] = updates[field];
     }

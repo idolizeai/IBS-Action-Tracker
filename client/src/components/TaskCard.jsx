@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Pencil, Trash2, ChevronDown, User, EyeIcon, Skull } from 'lucide-react';
+import { Check, Pencil, Trash2, ChevronDown, User, EyeIcon, Skull, Clock } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -91,6 +91,18 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
       setDeleting(false);
     }
   }
+  const formatDate = (dateStr) => {
+    const clean = dateStr.replace("Z", "");
+    const date = new Date(clean);
+
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <motion.div
@@ -240,6 +252,10 @@ export default function TaskCard({ task, onUpdated, onDeleted, onEdit }) {
 
         {/* Quick badges */}
         <div className="flex flex-wrap gap-1.5 mt-2 ml-7">
+
+          <span className="text-[11px] text-gray-400 flex items-center gap-1 w-full ml-0.5">
+            <Clock size={10} /> {formatDate(task.created_at)}
+          </span>
           <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${isCollaboratorTask ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
             {task.ibs_lead_name}
           </span>

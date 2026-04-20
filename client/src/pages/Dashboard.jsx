@@ -241,7 +241,7 @@ export default function Dashboard() {
                           >
                             <div className="flex items-start justify-between gap-2">
                               <span className="text-sm font-medium text-slate-800 flex-1 leading-snug">{task.title}</span>
-                              <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5 font-medium">{hrs}h ago</span>
+                              <span className="text-[10px] text-slate-400 whitespace-nowrap mt-0.5 font-medium">{hrs > 24 ? Math.floor(hrs / 24) + ' day(s) ago' : hrs + 'h ago'}</span>
                             </div>
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${PRIORITY_COLORS[task.priority] ?? 'bg-slate-100 text-slate-500 border-slate-200'}`}>
@@ -435,7 +435,7 @@ export default function Dashboard() {
                               {task.title}
                             </span>
                             <span className="text-[10px] text-white bg-orange-400 font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
-                              {hrs}h ago
+                              {hrs > 24 ? Math.floor(hrs / 24) + ' day(s) ago' : hrs + 'h ago'}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 flex-wrap">

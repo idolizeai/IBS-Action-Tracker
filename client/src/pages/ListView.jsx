@@ -231,6 +231,18 @@ export default function ListView() {
     return acc;
   }, {});
 
+  const formatDate = (dateStr) => {
+    const clean = dateStr.replace("Z", "");
+    const date = new Date(clean);
+
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
   const doneGroups = showDone ? groupByPeriod(tasks) : [];
 
   return (
@@ -277,6 +289,7 @@ export default function ListView() {
                 </button>
               </span>
             )}
+
             {filters.function_type && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
                 Function: {filters.function_type}
@@ -448,6 +461,8 @@ export default function ListView() {
                                 </div>
                               )}
 
+
+
                               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                 {/* Priority dot + label */}
                                 <span className="flex items-center gap-1 text-xs text-slate-400">
@@ -455,6 +470,9 @@ export default function ListView() {
                                   {PRIO_LABEL[task.priority]?.split(' · ')[0]}
                                 </span>
                                 <span className="text-slate-300">·</span>
+                                <span className="text-[11px] text-gray-400 flex items-center gap-1 w-full ml-0.5">
+                                  <Clock size={10} /> {formatDate(task.created_at)}
+                                </span>
 
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-100 font-medium">
                                   {task.function_type}
@@ -609,6 +627,9 @@ export default function ListView() {
                                   </div>
                                 )}
 
+                                <span className="text-[11px] text-gray-400 flex items-center gap-1 w-full ml-0.5">
+                                  <Clock size={10} /> {formatDate(task.created_at)}
+                                </span>
                                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                                   <span className="text-xs  px-2 py-0.5  rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium">
                                     {task.function_type}
