@@ -38,49 +38,109 @@ const decryptTitle = (stored) => {
   const decipher = crypto.createDecipheriv(ALGORITHM, KEY, IV);
   return Buffer.concat([decipher.update(Buffer.from(stored, 'base64')), decipher.final()]).toString('utf8');
 };
-
 const getTasksForUser = async (user, filters = {}) => {
-  const { priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, done, is_draft, assignment, is_delayed } = filters;
+  const {
+    priority,
+    function_type,
+    ibs_lead_id,
+    customer_id,
+    financial_impact,
+    comm_mode,
+    done,
+    is_draft,
+    assignment,
+    is_delayed
+  } = filters;
 
-  let where = {};
+  let accessWhere = {};
+  let filterWhere = {};
 
+
+  let assignedByUserId = null;
+
+  if (assignment === 'to_me' && ibs_lead_id) {
+    const assignedByUser = await User.findOne({
+      where: { ibs_lead_id: Number(ibs_lead_id) },
+      attributes: ['id']
+    });
+    if (!assignedByUser) return [];
+    assignedByUserId = assignedByUser.id;
+  }
+  // -------------------------
+  // ACCESS CONTROL (STRICT)
+  // -------------------------
   if (is_draft === 'true') {
-    where = { user_id: user.id, is_draft: true };
-  } else {
-    const conditions = [{ user_id: user.id }];
-    if (user.ibs_lead_id) {
-      conditions.push({ ibs_lead_id: user.ibs_lead_id });
-    }
-    where = {
-      [Op.or]: conditions,
-      is_draft: false
+    accessWhere = {
+      user_id: user.id,
+      is_draft: true
     };
-
-    // Apply assignment filter
+  } else {
     if (assignment === 'by_me') {
-      // Only tasks created by current user
-      where = { user_id: user.id, is_draft: false };
-    } else if (assignment === 'to_me') {
-      // Only tasks where user is a collaborator (not the creator)
-      if (user.ibs_lead_id) {
-        where = { ibs_lead_id: user.ibs_lead_id, user_id: { [Op.ne]: user.id }, is_draft: false };
-      } else {
-        // User has no ibs_lead_id, so they can't have tasks assigned to them
-        return [];
-      }
+      accessWhere = {
+        user_id: user.id,
+        is_draft: false
+      };
     }
-    // 'all' uses the default where clause above
+    else if (assignment === 'to_me') {
+      if (!user.ibs_lead_id) return [];
+
+      accessWhere = {
+        ibs_lead_id: user.ibs_lead_id,
+        user_id: { [Op.ne]: user.id },
+        is_draft: false
+      };
+
+      if (assignedByUserId) {
+        accessWhere.user_id = assignedByUserId;
+      }
+
+    }
+    else {
+      const conditions = [{ user_id: user.id }];
+
+      if (user.ibs_lead_id) {
+        conditions.push({ ibs_lead_id: user.ibs_lead_id });
+      }
+
+      accessWhere = {
+        [Op.or]: conditions,
+        is_draft: false
+      };
+    }
   }
 
-  if (priority !== undefined && priority !== '') where.priority = Number(priority);
-  if (function_type) where.function_type = function_type;
-  if (ibs_lead_id) where.ibs_lead_id = Number(ibs_lead_id);
-  if (customer_id) where.customer_id = Number(customer_id);
-  if (financial_impact) where.financial_impact = financial_impact;
-  if (comm_mode) where.comm_mode = comm_mode;
+  // -------------------------
+  // FILTERS (SAFE)
+  // -------------------------
+  if (priority !== undefined && priority !== '') {
+    filterWhere.priority = Number(priority);
+  }
+
+  if (function_type) {
+    filterWhere.function_type = function_type;
+  }
+
+  if (customer_id) {
+    filterWhere.customer_id = Number(customer_id);
+  }
+
+  if (financial_impact) {
+    filterWhere.financial_impact = financial_impact;
+  }
+
+  if (comm_mode) {
+    filterWhere.comm_mode = comm_mode;
+  }
+
+  // 🚫 CRITICAL FIX: prevent override in "to_me"
+  if (assignment !== 'to_me' && ibs_lead_id) {
+    filterWhere.ibs_lead_id = Number(ibs_lead_id);
+  }
+
+  // Delayed logic
   if (is_delayed === 'true' || is_delayed === true || is_delayed === 1) {
-    where.is_delayed = true;
-    where[Op.and] = [
+    filterWhere.is_delayed = true;
+    filterWhere[Op.and] = [
       {
         [Op.or]: [
           { priority: 0 },
@@ -90,8 +150,16 @@ const getTasksForUser = async (user, filters = {}) => {
     ];
   }
 
+  // Done flag (keep same behavior)
+  filterWhere.done = (done === 'true');
 
-  where.done = (done === 'true');
+  // -------------------------
+  // FINAL WHERE
+  // -------------------------
+  const where = {
+    ...accessWhere,
+    ...filterWhere
+  };
 
   const tasks = await Task.findAll({
     where,
@@ -102,9 +170,13 @@ const getTasksForUser = async (user, filters = {}) => {
     ],
   });
 
+  // -------------------------
+  // RESPONSE MAPPING (UNCHANGED)
+  // -------------------------
   return tasks.map((task) => {
     const flattened = flattenTask(task);
     const missing = [];
+
     if (task.is_draft) {
       if (flattened.priority === null || flattened.priority === undefined) {
         missing.push('Priority');
@@ -129,7 +201,6 @@ const getTasksForUser = async (user, filters = {}) => {
     return { ...flattened, missing };
   });
 };
-
 const createTask = async (userId, data) => {
   const { title, priority, function_type, ibs_lead_id, customer_id, financial_impact, comm_mode, is_draft } = data;
   const task = await Task.create({
