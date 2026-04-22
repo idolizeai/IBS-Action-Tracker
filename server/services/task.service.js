@@ -234,15 +234,17 @@ const updateTask = async (taskId, user, updates) => {
     }
 
     // ── ADMIN: may ONLY update `priority` ────────────────────────────────────
-    if (dbUser.role === 'admin') {
+    if (dbUser.role === 'admin' && task.ibs_lead_id === user.ibs_lead_id) {
+      console.log('admin', task.ibs_lead_id, user.ibs_lead_id, dbUser.role);
       // Check that the request contains ONLY the `priority` field
       const requestedKeys = Object.keys(updates);
       const hasOnlyPriority =
         requestedKeys.length === 1 && requestedKeys[0] === 'priority';
+      const hasDelay = requestedKeys.length === 1 && requestedKeys[0] === 'is_delayed';
 
-      if (!hasOnlyPriority) {
+      if (!hasOnlyPriority && !hasDelay) {
         const err = new Error(
-          'As an admin assigned to this task you can only update the priority field'
+          'As an admin assigned to this task you can only update the priority field and delay status'
         );
         err.statusCode = 403;
         throw err;
@@ -250,20 +252,39 @@ const updateTask = async (taskId, user, updates) => {
 
       // Validate priority value
       const priorityVal = updates.priority;
+      const isDelayVal = updates.is_delayed;
       if (
-        priorityVal === undefined ||
-        priorityVal === null ||
-        !Number.isFinite(Number(priorityVal))
+        hasOnlyPriority &&
+        (priorityVal === undefined ||
+          priorityVal === null ||
+          !Number.isFinite(Number(priorityVal)))
       ) {
         const err = new Error('priority must be a valid number');
         err.statusCode = 400;
         throw err;
       }
-
-      await task.update({
-        priority: Number(priorityVal),
-        updated_at: literal('GETDATE()'),
-      });
+      if (
+        hasDelay &&
+        (isDelayVal === undefined ||
+          isDelayVal === null ||
+          typeof isDelayVal !== 'boolean')
+      ) {
+        const err = new Error('is_delayed must be a valid boolean');
+        err.statusCode = 400;
+        throw err;
+      }
+      if (hasOnlyPriority) {
+        await task.update({
+          priority: Number(priorityVal),
+          updated_at: literal('GETDATE()'),
+        });
+      }
+      if (hasDelay) {
+        await task.update({
+          is_delayed: Boolean(isDelayVal),
+          updated_at: literal('GETDATE()'),
+        });
+      }
       await task.reload({ include: TASK_INCLUDE });
       return flattenTask(task);
     }

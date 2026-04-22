@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mic, MicOff, Save, FileText } from 'lucide-react';
+import { X, Mic, MicOff, Save, FileText, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
 import BubbleSelector from './BubbleSelector';
 import { useSpeech } from '../hooks/useSpeech';
 
-const FUNCTIONS = ['HR','BAU','Solutions','Planning','Proposal','Admin','Finance','Sales','Marketing','Training','Offerings','Misc'];
+const FUNCTIONS = ['HR', 'BAU', 'Solutions', 'Planning', 'Proposal', 'Admin', 'Finance', 'Sales', 'Marketing', 'Training', 'Offerings', 'Misc'];
 
 const PRIORITY_OPTS = [
   { value: 0, label: 'P0 · Now', selectedClass: 'bg-red-600    border-red-600    text-white shadow-sm shadow-red-500/30' },
@@ -193,6 +193,19 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
     label: c.is_internal ? `${c.name} (Internal)` : c.name,
   }));
 
+  const formatDate = (dateStr) => {
+    const clean = dateStr.replace("Z", "");
+    const date = new Date(clean);
+
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -230,9 +243,20 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
               {/* Header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 flex-shrink-0">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    {editTask ? (isCollaboratorTask ? 'View Task' : 'Edit Task') : 'New Action Items'}
-                  </h2>
+                  <div className='flex  gap-x-4'>
+
+                    <h2 className="te xt-lg font-bold text-slate-900 w-full">
+                      {editTask ? (isCollaboratorTask ? 'View Task' : 'Edit Task') : 'New Action Items'}
+                    </h2>
+                    {
+                      editTask && editTask.created_at ?
+                        <span className="text-[11px]  flex items-center gap-1 w-full text-nowrap">
+                          <Clock size={10} />
+                          {formatDate(editTask.created_at)}
+                        </span>
+                        : null
+                    }
+                  </div>
                   {!isCollaboratorTask && (
                     <p className="text-xs text-slate-400 mt-0.5">
                       {filledCount}/7 fields completed
@@ -287,11 +311,10 @@ export default function AddModal({ open, onClose, onSaved, ibsLeads, customers, 
                         <button
                           type="button"
                           onClick={toggleMic}
-                          className={`relative p-2 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                            listening
-                              ? 'bg-green-500 text-white shadow-md shadow-green-500/40 focus:ring-green-400'
-                              : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 focus:ring-slate-300'
-                          }`}
+                          className={`relative p-2 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${listening
+                            ? 'bg-green-500 text-white shadow-md shadow-green-500/40 focus:ring-green-400'
+                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 focus:ring-slate-300'
+                            }`}
                           title={listening ? 'Microphone on — click to mute' : 'Microphone off — click to unmute'}
                           aria-label={listening ? 'Stop recording' : 'Start recording'}
                         >
