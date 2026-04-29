@@ -66,6 +66,17 @@ const getTasksForUser = async (user, filters = {}) => {
     if (!assignedByUser) return [];
     assignedByUserId = assignedByUser.id;
   }
+
+  let filterIbsLeadUserId = null;
+  if (ibs_lead_id && !assignment) {
+    const filterIbsLeadUser = await User.findOne({
+      where: { ibs_lead_id: Number(ibs_lead_id) },
+      attributes: ['id']
+    });
+    // If no user owns this ibs_lead, that half of the OR simply won't match anything
+    filterIbsLeadUserId = filterIbsLeadUser?.id ?? null;
+  }
+
   // -------------------------
   // ACCESS CONTROL (STRICT)
   // -------------------------
@@ -96,16 +107,70 @@ const getTasksForUser = async (user, filters = {}) => {
 
     }
     else {
-      const conditions = [{ user_id: user.id }];
+      // const conditions = [{ user_id: user.id }];
 
-      if (user.ibs_lead_id) {
-        conditions.push({ ibs_lead_id: user.ibs_lead_id });
+      // if (user.ibs_lead_id) {
+      //   conditions.push({ ibs_lead_id: user.ibs_lead_id });
+      // }
+
+      // accessWhere = {
+      //   [Op.or]: conditions,
+      //   is_draft: false
+      // };
+      if (ibs_lead_id && user.ibs_lead_id) {
+        // Two-sided view scoped to the selected IBS lead:
+        //   Leg 1: tasks I created and assigned to that IBS lead
+        //   Leg 2: tasks assigned to me (my ibs_lead_id) and created by
+        //           the user who owns the selected ibs_lead_id
+        const conditions = [
+          {
+            user_id: user.id,
+            ibs_lead_id: Number(ibs_lead_id)
+          }
+        ];
+
+        if (filterIbsLeadUserId) {
+          conditions.push({
+            ibs_lead_id: user.ibs_lead_id,
+            user_id: filterIbsLeadUserId
+          });
+        }
+
+        accessWhere = {
+          [Op.or]: conditions,
+          is_draft: false
+        };
+
+      } else if (ibs_lead_id && !user.ibs_lead_id) {
+        // I have no ibs_lead_id myself, so I can only see tasks I created
+        // for that ibs lead — no "assigned to me" leg possible
+        accessWhere = {
+          user_id: user.id,
+          ibs_lead_id: Number(ibs_lead_id),
+          is_draft: false
+        };
+
+      } else {
+        // No ibs_lead_id filter — original broad default
+        const conditions = [{ user_id: user.id }];
+        if (user.ibs_lead_id) {
+          conditions.push({ ibs_lead_id: user.ibs_lead_id });
+        }
+        accessWhere = {
+          [Op.or]: conditions,
+          is_draft: false
+        };
       }
 
-      accessWhere = {
-        [Op.or]: conditions,
-        is_draft: false
-      };
+
+
+
+
+
+
+
+
+
     }
   }
 
@@ -132,10 +197,10 @@ const getTasksForUser = async (user, filters = {}) => {
     filterWhere.comm_mode = comm_mode;
   }
 
-  // 🚫 CRITICAL FIX: prevent override in "to_me"
-  if (assignment !== 'to_me' && ibs_lead_id) {
+  if (assignment === 'by_me' && ibs_lead_id) {
     filterWhere.ibs_lead_id = Number(ibs_lead_id);
   }
+
 
   // Delayed logic
   if (is_delayed === 'true' || is_delayed === true || is_delayed === 1) {
@@ -160,6 +225,8 @@ const getTasksForUser = async (user, filters = {}) => {
     ...accessWhere,
     ...filterWhere
   };
+
+  console.log('where', where);
 
   const tasks = await Task.findAll({
     where,
